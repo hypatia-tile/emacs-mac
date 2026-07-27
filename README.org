@@ -35,6 +35,14 @@ Search the configured archives by name or summary (case-insensitive):
 #+END_SRC
 Refresh first (=scripts/health-check.sh --refresh=) if results look stale.
 
+Inspect anything else (themes a package provides, key bindings, ...) by
+evaluating Elisp in a batch Emacs with the archives ready:
+#+BEGIN_SRC sh
+  scripts/emacs-eval.sh '(princ (emacs-version))'
+  scripts/emacs-eval.sh --install tokyo-night \
+    "(dolist (th (custom-available-themes)) (princ (format \"%s\\n\" th)))"
+#+END_SRC
+
 * Debugging
 
 To catch initialization errors, run Emacs with following option:
