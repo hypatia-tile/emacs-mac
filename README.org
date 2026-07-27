@@ -3,11 +3,22 @@ This is my personal Emacs configuration repository. In this file, I
 write operational notes, tips, and so on, to my future self.
 
 * Health check
-Use emacs batch execution.
+Load the whole config in a throwaway batch session; a non-zero exit
+means initialization raised an error.
 #+BEGIN_SRC sh
   cd ~/.emacs.d && emacs --batch -l init.el
   echo $?
 #+END_SRC
+
+This is wrapped in a script for convenience:
+#+BEGIN_SRC sh
+  scripts/health-check.sh            # load init.el, report pass/fail
+  scripts/health-check.sh --refresh  # refresh package archives first
+#+END_SRC
+
+Use =--refresh= when a package install fails with =file-error ...
+Not found=: MELPA drops old tarballs daily, so a stale local archive
+can point at versions that no longer exist on the server.
 
 Claude calls it internally in =/elisp-review=.
 
