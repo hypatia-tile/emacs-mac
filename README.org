@@ -28,6 +28,13 @@ can point at versions that no longer exist on the server.
 
 Claude calls it internally in =/elisp-review=.
 
+* Finding packages
+Search the configured archives by name or summary (case-insensitive):
+#+BEGIN_SRC sh
+  scripts/package-search.sh tokyo   # e.g. find Tokyo Night themes
+#+END_SRC
+Refresh first (=scripts/health-check.sh --refresh=) if results look stale.
+
 * Debugging
 
 To catch initialization errors, run Emacs with following option:
