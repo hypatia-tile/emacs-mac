@@ -2,6 +2,12 @@
 This is my personal Emacs configuration repository. In this file, I
 write operational notes, tips, and so on, to my future self.
 
+* Conventions
++ Commit messages follow [[https://www.conventionalcommits.org/][Conventional Commits]]:
+  =type(scope): summary= (e.g. =feat(completion): add vertico=,
+  =chore(scripts): ...=, =docs: ...=). One commit per feature.
++ Code comments in =init.el= are written in English.
+
 * Health check
 Load the whole config in a throwaway batch session; a non-zero exit
 means initialization raised an error.
