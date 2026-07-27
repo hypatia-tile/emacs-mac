@@ -86,6 +86,19 @@
   :init
   (marginalia-mode))
 
+;; Consult: a collection of practical search/navigation commands built on top
+;; of the minibuffer completion (vertico). Many commands show a live preview.
+;; Standard keys (C-x b, C-s, M-y, M-g g) are kept; consult is bound to free
+;; keys so the two can be compared side by side.
+(use-package consult
+  :ensure t
+  :bind (("C-c b" . consult-buffer)   ; like C-x b, plus recent files/bookmarks
+         ("C-c y" . consult-yank-pop)  ; like M-y, pick from the kill-ring
+         ("M-s l" . consult-line)      ; incremental search within this buffer
+         ("M-s g" . consult-grep)      ; grep across files
+         ("M-s r" . consult-ripgrep)   ; ripgrep across the project
+         ("M-g i" . consult-imenu)))   ; jump to a function/heading
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
