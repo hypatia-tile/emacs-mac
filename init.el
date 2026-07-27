@@ -99,6 +99,14 @@
          ("M-s r" . consult-ripgrep)   ; ripgrep across the project
          ("M-g i" . consult-imenu)))   ; jump to a function/heading
 
+;; Which-key: after starting a key sequence, pop up the available follow-up
+;; keys (e.g. press C-x and pause to see every C-x binding). Built into
+;; Emacs 30, so no installation is needed (:ensure nil, like org).
+(use-package which-key
+  :ensure nil
+  :init
+  (which-key-mode))
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
