@@ -56,6 +56,15 @@
   :hook
   (org-mode . visual-line-mode))
 
+;; Vertico: vertical interactive completion UI for the minibuffer.
+;; It enhances the built-in `completing-read', so all commands that
+;; read from the minibuffer (M-x, C-x C-f, C-x b, ...) get a vertical,
+;; incrementally-filtered candidate list.
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode))
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
