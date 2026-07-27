@@ -78,6 +78,14 @@
   ;; "/usr/share/lib"; `orderless' is not ideal for path segments.
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
+;; Marginalia: add annotations (docstrings, file metadata, key bindings, ...)
+;; in the right margin of minibuffer candidates. Display only -- it does not
+;; affect how vertico lists or how orderless filters.
+(use-package marginalia
+  :ensure t
+  :init
+  (marginalia-mode))
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
