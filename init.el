@@ -107,6 +107,19 @@
   :init
   (which-key-mode))
 
+;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
+(use-package tokyo-night
+  :ensure t
+  :config
+  (load-theme 'tokyo-night :no-confirm))
+
+;; Transparent background (text stays opaque) to match kitty's
+;; background_opacity 0.90. `alpha-background' needs Emacs 29+ and a build that
+;; supports it; on macOS that means emacs-plus -- the stock emacs-app (NS
+;; build) and the emacs-mac port both ignore alpha-background.
+(add-to-list 'default-frame-alist '(alpha-background . 90))
+(set-frame-parameter nil 'alpha-background 90)
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
