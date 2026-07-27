@@ -113,12 +113,11 @@
   :config
   (load-theme 'tokyo-night :no-confirm))
 
-;; Transparent background (text stays opaque) to match kitty's
-;; background_opacity 0.90. `alpha-background' needs Emacs 29+ and a build that
-;; supports it; on macOS that means emacs-plus -- the stock emacs-app (NS
-;; build) and the emacs-mac port both ignore alpha-background.
-(add-to-list 'default-frame-alist '(alpha-background . 90))
-(set-frame-parameter nil 'alpha-background 90)
+;; Background transparency: deferred. On macOS Tahoe (26) the built-in
+;; `alpha-background' is not rendered even under emacs-plus (setting it to 50
+;; still showed no transparency), so it is left out for now. To revisit, use
+;; the emacs-plus `window-blur' community patch (blur + configurable alpha) or
+;; the `emacs-liquid-glass' package (NSGlassEffectView, needs emacs-plus@31).
 
 
 ;; Hide the Start Screen (Splash Screen)
