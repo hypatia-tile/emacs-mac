@@ -107,6 +107,13 @@
   :init
   (which-key-mode))
 
+;; Magit: a full-featured git interface. `C-x g' opens the status buffer,
+;; from which staging, committing, pushing, branching, log browsing, etc. are
+;; all a few keys away. Press `?' inside any magit buffer for a menu.
+(use-package magit
+  :ensure t
+  :bind ("C-x g" . magit-status))
+
 ;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
 (use-package tokyo-night
   :ensure t
