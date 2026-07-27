@@ -1,0 +1,35 @@
+#+TITLE: Emacs Config
+This is my personal Emacs configuration repository. In this file, I
+write operational notes, tips, and so on, to my future self.
+
+* Health check
+Use emacs batch execution.
+#+BEGIN_SRC sh
+  cd ~/.emacs.d && emacs --batch -l init.el
+  echo $?
+#+END_SRC
+
+Claude calls it internally in =/elisp-review=.
+
+* Debugging
+
+To catch initialization errors, run Emacs with following option:
+#+BEGIN_SRC sh
+  emacs --debug-init
+#+END_SRC
+
+To run Emacs on isolated environment, run it:
+#+BEGIN_SRC sh
+  emacs -Q
+#+END_SRC
+or
+#+BEGIN_SRC sh
+  emacs --init-directory <dir>
+#+END_SRC
+
++ =M-x toggle-debug-on-error=, =*Messages*=, =*Warnings*=.
++ =M-x check-parens=, comment out splitting.
++ =M-:= query the live Emacs.
++ Write test script using =emacs --batch --eval=.
+* Reload
+** TODO TO BE DEFINED
