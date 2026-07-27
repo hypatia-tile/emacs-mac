@@ -65,6 +65,19 @@
   :init
   (vertico-mode))
 
+;; Orderless: a completion style that matches space-separated components
+;; in any order, anywhere in the candidate. Pairs with vertico, which only
+;; handles how candidates are displayed, not how they are filtered.
+(use-package orderless
+  :ensure t
+  :custom
+  ;; Try `orderless' first, fall back to the built-in `basic' style so that
+  ;; exact/prefix matching (and TAB completion) still works as expected.
+  (completion-styles '(orderless basic))
+  ;; For file paths, keep `partial-completion' so "/u/s/l" can expand to
+  ;; "/usr/share/lib"; `orderless' is not ideal for path segments.
+  (completion-category-overrides '((file (styles basic partial-completion)))))
+
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
