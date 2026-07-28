@@ -1,3 +1,5 @@
+;;; Package bootstrap
+
 ;; Since I'm in the learning stage, show all errors.
 (setq debug-on-error t)
 
@@ -17,7 +19,8 @@
 (unless package-archive-contents
   (package-refresh-contents))
 
-;; Package installations.
+
+;;; Environment: PATH & direnv
 
 ;; exec-path-from-shell: a GUI Emacs on macOS starts with a minimal PATH and
 ;; does not see tools installed via nix / homebrew / direnv. Import the login
@@ -38,6 +41,9 @@
   :ensure t
   :hook (after-init . envrc-global-mode)
   :bind-keymap ("C-c e" . envrc-command-map))
+
+
+;;; Japanese input & notes
 
 ;; ddskk
 ;; To set the variable `skk-large-jisyo`, it is better to use `:custom`
@@ -75,6 +81,9 @@
   (org-startup-with-inline-images t)
   :hook
   (org-mode . visual-line-mode))
+
+
+;;; Completion
 
 ;; Vertico: vertical interactive completion UI for the minibuffer.
 ;; It enhances the built-in `completing-read', so all commands that
@@ -151,6 +160,9 @@
   :init
   (which-key-mode))
 
+
+;;; Tools
+
 ;; Magit: a full-featured git interface. `C-x g' opens the status buffer,
 ;; from which staging, committing, pushing, branching, log browsing, etc. are
 ;; all a few keys away. Press `?' inside any magit buffer for a menu.
@@ -166,6 +178,9 @@
   :ensure t
   :bind ("C-c t" . vterm))
 
+
+;;; Languages & LSP
+
 ;; Eglot (built-in): a minimal LSP client. Auto-start clangd for C/C++ buffers.
 ;; clangd is found via PATH (exec-path-from-shell) or, inside a project, via the
 ;; flake toolchain that envrc applies; it reads compile_commands.json. Standard
@@ -180,10 +195,15 @@
 ;; next-error (M-g n / M-g p) is not wired to flymake here, so bind the flymake
 ;; jumpers under the classic C-c ! prefix (Ctrl-based; M-n would be a dead key
 ;; on macOS). Active only where flymake-mode is on (e.g. eglot buffers).
-(with-eval-after-load 'flymake
-  (define-key flymake-mode-map (kbd "C-c ! n") #'flymake-goto-next-error)
-  (define-key flymake-mode-map (kbd "C-c ! p") #'flymake-goto-prev-error)
-  (define-key flymake-mode-map (kbd "C-c ! l") #'flymake-show-buffer-diagnostics))
+(use-package flymake
+  :ensure nil
+  :bind (:map flymake-mode-map
+              ("C-c ! n" . flymake-goto-next-error)
+              ("C-c ! p" . flymake-goto-prev-error)
+              ("C-c ! l" . flymake-show-buffer-diagnostics)))
+
+
+;;; Appearance
 
 ;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
 (use-package tokyo-night
@@ -197,15 +217,12 @@
 ;; the emacs-plus `window-blur' community patch (blur + configurable alpha) or
 ;; the `emacs-liquid-glass' package (NSGlassEffectView, needs emacs-plus@31).
 
-
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)
 
-(menu-bar-mode -1) ; Hide menu bar
-
-;; Disable toolbar, menu bar, and scroll bar
-(tool-bar-mode -1)
+;; Disable menu bar, tool bar, and scroll bar.
 (menu-bar-mode -1)
+(tool-bar-mode -1)
 (scroll-bar-mode -1)
 
 ;; Display line number
@@ -214,15 +231,8 @@
 ;; Hilite current cursor line
 (global-hl-line-mode t)
 
-;; Re-bind help command
-(global-set-key (kbd "M-?") 'help-command)
-(global-set-key (kbd "C-x ?") 'help-command)
 
-;; xref fallback bindings. M-. (xref-find-definitions) works, but M-, does not
-;; reach this GUI Emacs (Option+comma is swallowed below Emacs) and M-? is
-;; rebound to `help-command' above, so give these two reliable alternatives.
-(global-set-key (kbd "C-c ,") #'xref-go-back)
-(global-set-key (kbd "C-c r") #'xref-find-references)
+;;; Files & editing
 
 (add-to-list 'auto-mode-alist '("\\.foo\\'" . c-mode))
 (add-to-list 'auto-mode-alist '("\\.notes\\'" . org-mode))
@@ -243,3 +253,20 @@
 
 ;; Use spaces instead of tabs
 (setq-default indent-tabs-mode nil)
+
+
+;;; Keybindings (global)
+
+;; Global key tweaks for built-in commands, kept in one place. Package-specific
+;; bindings live in their own use-package blocks (:bind). List every personal
+;; binding with M-x describe-personal-keybindings.
+(use-package emacs
+  :ensure nil
+  :bind (;; Make the help prefix easier to reach.
+         ("M-?" . help-command)
+         ("C-x ?" . help-command)
+         ;; xref: M-. (xref-find-definitions) works, but M-, is swallowed by
+         ;; macOS (Option+comma) and M-? is help above, so give go-back and
+         ;; find-references reliable alternatives.
+         ("C-c ," . xref-go-back)
+         ("C-c r" . xref-find-references)))
