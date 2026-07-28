@@ -7,6 +7,9 @@ backup
 # transient (magit) runtime state: history, saved values, menu levels
 /transient/
 
+# compiled tree-sitter grammars (machine-specific, rebuilt on demand)
+/tree-sitter/
+
 # -*- mode: gitignore; -*-
 *~
 \#*\#
