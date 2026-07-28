@@ -158,11 +158,21 @@
 ;; Eglot (built-in): a minimal LSP client. Auto-start clangd for C/C++ buffers.
 ;; clangd is found via PATH (exec-path-from-shell) or, inside a project, via the
 ;; flake toolchain that envrc applies; it reads compile_commands.json. Standard
-;; Emacs facilities do the rest: eldoc (hover), flymake (diagnostics), xref
-;; (M-. / M-,), completion-at-point (shown by corfu). Rename: M-x eglot-rename.
+;; Emacs facilities do the rest: eldoc (hover), flymake (diagnostics, see
+;; below), xref (M-. ; go-back on C-c ,), completion-at-point (shown by corfu).
+;; Rename: M-x eglot-rename.
 (use-package eglot
   :ensure nil
   :hook ((c-mode c++-mode) . eglot-ensure))
+
+;; Flymake diagnostics navigation. Modern flymake ships no default keys and
+;; next-error (M-g n / M-g p) is not wired to flymake here, so bind the flymake
+;; jumpers under the classic C-c ! prefix (Ctrl-based; M-n would be a dead key
+;; on macOS). Active only where flymake-mode is on (e.g. eglot buffers).
+(with-eval-after-load 'flymake
+  (define-key flymake-mode-map (kbd "C-c ! n") #'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "C-c ! p") #'flymake-goto-prev-error)
+  (define-key flymake-mode-map (kbd "C-c ! l") #'flymake-show-buffer-diagnostics))
 
 ;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
 (use-package tokyo-night
