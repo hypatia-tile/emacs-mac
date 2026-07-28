@@ -4,6 +4,9 @@ backup
 
 /eln-cache/
 
+# transient (magit) runtime state: history, saved values, menu levels
+/transient/
+
 # -*- mode: gitignore; -*-
 *~
 \#*\#
