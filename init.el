@@ -119,6 +119,19 @@
          ("M-s r" . consult-ripgrep)   ; ripgrep across the project
          ("M-g i" . consult-imenu)))   ; jump to a function/heading
 
+;; Corfu: in-buffer completion popup at point -- the buffer-local counterpart
+;; to vertico (which handles the minibuffer). It displays whatever
+;; `completion-at-point' offers, including eglot's LSP candidates.
+(use-package corfu
+  :ensure t
+  :init
+  (global-corfu-mode)
+  :custom
+  (corfu-auto t)               ; pop up automatically while typing
+  ;; Let TAB do indentation first and completion when already indented, so
+  ;; TAB is a natural trigger for the corfu popup.
+  (tab-always-indent 'complete))
+
 ;; Which-key: after starting a key sequence, pop up the available follow-up
 ;; keys (e.g. press C-x and pause to see every C-x binding). Built into
 ;; Emacs 30, so no installation is needed (:ensure nil, like org).
