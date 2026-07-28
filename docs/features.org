@@ -13,8 +13,11 @@ companion to the inline comments in =init.el= and the operational notes in
 | Search / navigate | consult                             | =C-c b= buffer, =C-c y= yank-pop,      |
 |                   |                                     | =M-s l= line, =M-s g= grep,            |
 |                   |                                     | =M-s r= ripgrep, =M-g i= imenu         |
+| In-buffer complete | corfu                              | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
+| LSP (C / C++)     | eglot (built-in) + clangd           | =M-.= def, =C-c ,= back, =C-c r= refs, |
+|                   |                                     | =M-x eglot-rename=, diag =M-g n= / =M-g p= |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
@@ -22,6 +25,29 @@ companion to the inline comments in =init.el= and the operational notes in
 
 Standard keys (=C-x b=, =C-s=, =M-y=, =M-g g=) are intentionally left intact;
 new features are bound to free keys so the two can be compared.
+
+*xref navigation note:* =M-.= (=xref-find-definitions=) works, but =M-,= does
+not reach this GUI Emacs (Option+comma is swallowed below Emacs) and =M-?= is
+rebound to =help-command=. So =xref-go-back= is on =C-c ,= and
+=xref-find-references= on =C-c r=.
+
+* Completion and LSP
+Two independent completion layers, by design:
+- *Minibuffer* -- vertico + orderless + marginalia + consult (for =M-x=,
+  find-file, buffer switching, search commands).
+- *In-buffer* -- corfu shows a popup at point for =completion-at-point=,
+  including eglot's LSP candidates. It pops up automatically while typing.
+
+=eglot= (built-in) auto-starts =clangd= in =c-mode= / =c++-mode=
+(=eglot-ensure=). It wires the standard Emacs facilities: eldoc (hover),
+flymake (diagnostics, =M-g n= / =M-g p=), xref (definitions/references), and
+=completion-at-point= (shown by corfu). clangd reads =compile_commands.json=;
+it is found via PATH (exec-path-from-shell) or the project's flake (envrc).
+
+Buffer-word completion: the built-in =dabbrev= (=M-/=) completes the word at
+point from buffer contents. It is *not* part of the corfu popup -- to add
+buffer words (and file names, ...) to the popup, add =cape= (e.g.
+=cape-dabbrev=) as a =completion-at-point= source. Deferred for now.
 
 * Per-directory environments (nix flake + direnv)
 This machine uses =direnv= + =nix-direnv= with a =.envrc= (=use flake=) per
@@ -32,8 +58,8 @@ Emacs:
   directory's =.envrc= automatically. Nothing Emacs-specific is needed.
 - *Emacs-native commands* (=compile=, =eglot=, executable lookup) -- these do
   not go through the shell, so =envrc= applies the =.envrc= environment
-  buffer-locally instead. This is what will feed the flake toolchain to the
-  planned LSP (eglot + clangd) setup.
+  buffer-locally instead. This is what feeds the flake toolchain (e.g. clangd)
+  to eglot -- see the Completion and LSP section.
 
 Prerequisite: a GUI Emacs on macOS starts with a minimal PATH and cannot see
 =direnv= / =nix=. =exec-path-from-shell= imports the login shell's PATH so
@@ -63,4 +89,5 @@ See =../scripts/=:
   stale MELPA archives).
 - =package-search.sh REGEXP= -- search available packages by name/summary.
 - =emacs-eval.sh [--install PKG] 'ELISP'= -- evaluate Elisp in a batch Emacs
-  with the archives ready (probe themes, bindings, ...).
+  with the archives ready (probe packages/themes); add =--init= to load the
+  full config first and probe the live state (key bindings, capf, ...).
