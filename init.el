@@ -29,6 +29,16 @@
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
+;; envrc: apply each directory's .envrc (direnv) as a buffer-local environment,
+;; so Emacs-native commands (compile, eglot, executable lookup) pick up the
+;; per-directory nix flake dev shell. A new .envrc must be approved once with
+;; `envrc-allow' (C-c e a). Needs `direnv' on PATH (exec-path-from-shell above).
+;; vterm gets direnv for free via the zsh hook, so this covers the Emacs side.
+(use-package envrc
+  :ensure t
+  :hook (after-init . envrc-global-mode)
+  :bind-keymap ("C-c e" . envrc-command-map))
+
 ;; ddskk
 ;; To set the variable `skk-large-jisyo`, it is better to use `:custom`
 ;; block rather than `setq` in `:config` block.
