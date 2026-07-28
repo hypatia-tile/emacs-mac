@@ -132,6 +132,17 @@
   ;; TAB is a natural trigger for the corfu popup.
   (tab-always-indent 'complete))
 
+;; Cape: extra completion-at-point sources for corfu. Add buffer-word
+;; completion (cape-dabbrev) and file-path completion (cape-file) to the global
+;; capf list, so corfu offers them in ordinary buffers. Note: in eglot (LSP)
+;; buffers eglot sets its own buffer-local capf, so LSP completion stays primary
+;; there; merging buffer words into LSP buffers (cape-capf-super) is deferred.
+(use-package cape
+  :ensure t
+  :init
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file))
+
 ;; Which-key: after starting a key sequence, pop up the available follow-up
 ;; keys (e.g. press C-x and pause to see every C-x binding). Built into
 ;; Emacs 30, so no installation is needed (:ensure nil, like org).
