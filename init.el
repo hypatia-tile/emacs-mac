@@ -155,6 +155,15 @@
   :ensure t
   :bind ("C-c t" . vterm))
 
+;; Eglot (built-in): a minimal LSP client. Auto-start clangd for C/C++ buffers.
+;; clangd is found via PATH (exec-path-from-shell) or, inside a project, via the
+;; flake toolchain that envrc applies; it reads compile_commands.json. Standard
+;; Emacs facilities do the rest: eldoc (hover), flymake (diagnostics), xref
+;; (M-. / M-,), completion-at-point (shown by corfu). Rename: M-x eglot-rename.
+(use-package eglot
+  :ensure nil
+  :hook ((c-mode c++-mode) . eglot-ensure))
+
 ;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
 (use-package tokyo-night
   :ensure t
