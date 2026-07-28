@@ -16,7 +16,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
-| LSP (C / C++)     | eglot (built-in) + clangd           | =M-.= def, =C-c ,= back, =C-c r= refs, |
+| LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =C-c ,= back, =C-c r= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
@@ -38,11 +38,18 @@ Two independent completion layers, by design:
 - *In-buffer* -- corfu shows a popup at point for =completion-at-point=,
   including eglot's LSP candidates. It pops up automatically while typing.
 
-=eglot= (built-in) auto-starts =clangd= in =c-mode= / =c++-mode=
-(=eglot-ensure=). It wires the standard Emacs facilities: eldoc (hover),
-flymake (diagnostics), xref (definitions/references), and =completion-at-point=
-(shown by corfu). clangd reads =compile_commands.json=; it is found via PATH
-(exec-path-from-shell) or the project's flake (envrc).
+=eglot= (built-in) auto-starts a language server (=eglot-ensure=) in =c-mode= /
+=c++-mode= (clangd) and =rust-ts-mode= (rust-analyzer). It wires the standard
+Emacs facilities: eldoc (hover), flymake (diagnostics), xref
+(definitions/references), and =completion-at-point= (shown by corfu). clangd
+reads =compile_commands.json=; servers are found via PATH (exec-path-from-shell)
+or the project's flake (envrc).
+
+Rust uses the built-in =rust-ts-mode= (tree-sitter). Its grammar is not shipped
+with Emacs, so =init.el= registers the grammar source and installs it once if
+missing (only under a window system, so the batch health-check stays offline).
+The compiled grammar lands in =tree-sitter/= (gitignored). If a =.rs= buffer
+is not fontified, run =M-x treesit-install-language-grammar= for =rust=.
 
 Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 =M-g p= (next-error) are not wired to flymake, so they are bound explicitly
