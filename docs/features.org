@@ -13,7 +13,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Search / navigate | consult                             | =C-c b= buffer, =C-c y= yank-pop,      |
 |                   |                                     | =M-s l= line, =M-s g= grep,            |
 |                   |                                     | =M-s r= ripgrep, =M-g i= imenu         |
-| In-buffer complete | corfu                              | auto popup while typing; =TAB=          |
+| In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
 | LSP (C / C++)     | eglot (built-in) + clangd           | =M-.= def, =C-c ,= back, =C-c r= refs, |
@@ -50,9 +50,12 @@ under the classic =C-c != prefix: =C-c ! n= next, =C-c ! p= previous, =C-c ! l=
 list buffer diagnostics.
 
 Buffer-word completion: the built-in =dabbrev= (=M-/=) completes the word at
-point from buffer contents. It is *not* part of the corfu popup -- to add
-buffer words (and file names, ...) to the popup, add =cape= (e.g.
-=cape-dabbrev=) as a =completion-at-point= source. Deferred for now.
+point from buffer contents. To also get buffer words in the corfu popup,
+=cape= registers =cape-dabbrev= (buffer words) and =cape-file= (file paths) on
+the global =completion-at-point-functions=. These show up in ordinary buffers;
+in eglot (LSP) buffers eglot installs its own buffer-local capf, so LSP
+completion stays primary there (merging buffer words into LSP buffers with
+=cape-capf-super= is deferred).
 
 * Per-directory environments (nix flake + direnv)
 This machine uses =direnv= + =nix-direnv= with a =.envrc= (=use flake=) per
