@@ -2,6 +2,9 @@
 This is my personal Emacs configuration repository. In this file, I
 write operational notes, tips, and so on, to my future self.
 
+See [[file:docs/features.org][docs/features.org]] for the installed features,
+key bindings, and the direnv / vterm setup.
+
 * Conventions
 + Commit messages follow [[https://www.conventionalcommits.org/][Conventional Commits]]:
   =type(scope): summary= (e.g. =feat(completion): add vertico=,

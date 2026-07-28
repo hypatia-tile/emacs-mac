@@ -1,0 +1,66 @@
+#+TITLE: Features and Setup Notes
+This document records what is configured in =init.el=, the key bindings,
+and the reasoning / verification behind the less obvious setup. It is a
+companion to the inline comments in =init.el= and the operational notes in
+=../README.org=.
+
+* Installed packages and key bindings
+| Area              | Package(s)                          | Key binding(s)                         |
+|-------------------+-------------------------------------+----------------------------------------|
+| Minibuffer UI     | vertico                             | (automatic)                            |
+| Filtering         | orderless                           | (automatic)                            |
+| Annotations       | marginalia                          | (automatic)                            |
+| Search / navigate | consult                             | =C-c b= buffer, =C-c y= yank-pop,      |
+|                   |                                     | =M-s l= line, =M-s g= grep,            |
+|                   |                                     | =M-s r= ripgrep, =M-g i= imenu         |
+| Key discovery     | which-key (built-in)                | (automatic popup)                      |
+| Git               | magit                               | =C-x g= status                         |
+| Theme             | tokyo-night                         | -                                      |
+| Shell PATH        | exec-path-from-shell                | -                                      |
+| Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
+| Terminal          | vterm                               | =C-c t=                                |
+
+Standard keys (=C-x b=, =C-s=, =M-y=, =M-g g=) are intentionally left intact;
+new features are bound to free keys so the two can be compared.
+
+* Per-directory environments (nix flake + direnv)
+This machine uses =direnv= + =nix-direnv= with a =.envrc= (=use flake=) per
+project directory. Two independent paths make those environments work inside
+Emacs:
+
+- *Inside vterm* -- vterm runs =$SHELL= (zsh), whose direnv hook loads the
+  directory's =.envrc= automatically. Nothing Emacs-specific is needed.
+- *Emacs-native commands* (=compile=, =eglot=, executable lookup) -- these do
+  not go through the shell, so =envrc= applies the =.envrc= environment
+  buffer-locally instead. This is what will feed the flake toolchain to the
+  planned LSP (eglot + clangd) setup.
+
+Prerequisite: a GUI Emacs on macOS starts with a minimal PATH and cannot see
+=direnv= / =nix=. =exec-path-from-shell= imports the login shell's PATH so
+=envrc= can find =direnv=.
+
+*Gotcha:* a new or changed =.envrc= must be approved once with =C-c e a=
+(=envrc-allow=) before Emacs will apply it.
+
+** Verified working (2026-07-28)
+- =envrc= applies a directory's =.envrc= to Emacs buffers (checked that a
+  project's flake variables appear via the minibuffer, e.g. =M-: (getenv ...)=).
+- =vterm= runs a full terminal inside Emacs -- Neovim launches inside it and
+  its LSP works, confirming vterm is a real PTY.
+- =vterm='s native module builds via cmake/libtool and is pre-compiled.
+
+* Background transparency (deferred)
+Matching kitty's =background_opacity 0.90= was attempted but dropped: on
+macOS Tahoe (26) the built-in =alpha-background= is not rendered even under
+emacs-plus (no transparency even at 50). The tokyo-night theme is kept. To
+revisit, use the emacs-plus =window-blur= community patch (blur + configurable
+alpha) or the =emacs-liquid-glass= package (needs emacs-plus@31). See the
+comment near the theme block in =init.el=.
+
+* Helper scripts
+See =../scripts/=:
+- =health-check.sh= -- load =init.el= under batch Emacs (=--refresh= updates
+  stale MELPA archives).
+- =package-search.sh REGEXP= -- search available packages by name/summary.
+- =emacs-eval.sh [--install PKG] 'ELISP'= -- evaluate Elisp in a batch Emacs
+  with the archives ready (probe themes, bindings, ...).
