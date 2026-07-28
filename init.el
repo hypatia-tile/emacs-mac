@@ -197,6 +197,12 @@
 (global-set-key (kbd "M-?") 'help-command)
 (global-set-key (kbd "C-x ?") 'help-command)
 
+;; xref fallback bindings. M-. (xref-find-definitions) works, but M-, does not
+;; reach this GUI Emacs (Option+comma is swallowed below Emacs) and M-? is
+;; rebound to `help-command' above, so give these two reliable alternatives.
+(global-set-key (kbd "C-c ,") #'xref-go-back)
+(global-set-key (kbd "C-c r") #'xref-find-references)
+
 (add-to-list 'auto-mode-alist '("\\.foo\\'" . c-mode))
 (add-to-list 'auto-mode-alist '("\\.notes\\'" . org-mode))
 
