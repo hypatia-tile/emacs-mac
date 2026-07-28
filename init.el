@@ -19,6 +19,16 @@
 
 ;; Package installations.
 
+;; exec-path-from-shell: a GUI Emacs on macOS starts with a minimal PATH and
+;; does not see tools installed via nix / homebrew / direnv. Import the login
+;; shell's PATH (and friends) so `direnv', compilers, etc. are found. Run only
+;; under a window system; in batch (health-check) this is skipped.
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
 ;; ddskk
 ;; To set the variable `skk-large-jisyo`, it is better to use `:custom`
 ;; block rather than `setq` in `:config` block.
