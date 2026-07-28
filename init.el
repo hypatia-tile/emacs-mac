@@ -181,15 +181,31 @@
 
 ;;; Languages & LSP
 
-;; Eglot (built-in): a minimal LSP client. Auto-start clangd for C/C++ buffers.
-;; clangd is found via PATH (exec-path-from-shell) or, inside a project, via the
-;; flake toolchain that envrc applies; it reads compile_commands.json. Standard
-;; Emacs facilities do the rest: eldoc (hover), flymake (diagnostics, see
-;; below), xref (M-. ; go-back on C-c ,), completion-at-point (shown by corfu).
-;; Rename: M-x eglot-rename.
+;; Eglot (built-in): a minimal LSP client. Auto-start the server for C/C++
+;; (clangd) and Rust (rust-analyzer). Servers are found via PATH
+;; (exec-path-from-shell) or, inside a project, via the flake toolchain that
+;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
+;; do the rest: eldoc (hover), flymake (diagnostics, see below), xref (M-. ;
+;; go-back on C-c ,), completion-at-point (shown by corfu). Rename:
+;; M-x eglot-rename.
 (use-package eglot
   :ensure nil
-  :hook ((c-mode c++-mode) . eglot-ensure))
+  :hook ((c-mode c++-mode rust-ts-mode) . eglot-ensure))
+
+;; Rust: use the built-in tree-sitter mode. It needs the Rust grammar, so
+;; record its source and install it once if missing -- but only under a window
+;; system, to keep the batch health-check offline and fast. `.rs' maps to
+;; rust-ts-mode; eglot (rust-analyzer) is started via the shared hook above.
+(use-package rust-ts-mode
+  :ensure nil
+  :mode "\\.rs\\'"
+  :init
+  (require 'treesit)
+  (add-to-list 'treesit-language-source-alist
+               '(rust "https://github.com/tree-sitter/tree-sitter-rust"))
+  (when (and (memq window-system '(mac ns x))
+             (not (treesit-language-available-p 'rust)))
+    (treesit-install-language-grammar 'rust)))
 
 ;; Flymake diagnostics navigation. Modern flymake ships no default keys and
 ;; next-error (M-g n / M-g p) is not wired to flymake here, so bind the flymake
