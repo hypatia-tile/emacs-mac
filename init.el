@@ -134,6 +134,14 @@
   :ensure t
   :bind ("C-x g" . magit-status))
 
+;; Vterm: a fast terminal emulator backed by libvterm, for day-to-day shell
+;; work inside Emacs. `C-c t' opens one. It runs $SHELL (zsh), whose direnv
+;; hook loads each directory's .envrc automatically. The native module is
+;; compiled on first use (needs cmake + libtool, both installed).
+(use-package vterm
+  :ensure t
+  :bind ("C-c t" . vterm))
+
 ;; Tokyo Night theme, matching the kitty terminal (bg #1a1b26 / fg #c0caf5).
 (use-package tokyo-night
   :ensure t
