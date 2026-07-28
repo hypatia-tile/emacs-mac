@@ -17,7 +17,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
 | LSP (C / C++)     | eglot (built-in) + clangd           | =M-.= def, =C-c ,= back, =C-c r= refs, |
-|                   |                                     | =M-x eglot-rename=, diag =M-g n= / =M-g p= |
+|                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
@@ -40,9 +40,14 @@ Two independent completion layers, by design:
 
 =eglot= (built-in) auto-starts =clangd= in =c-mode= / =c++-mode=
 (=eglot-ensure=). It wires the standard Emacs facilities: eldoc (hover),
-flymake (diagnostics, =M-g n= / =M-g p=), xref (definitions/references), and
-=completion-at-point= (shown by corfu). clangd reads =compile_commands.json=;
-it is found via PATH (exec-path-from-shell) or the project's flake (envrc).
+flymake (diagnostics), xref (definitions/references), and =completion-at-point=
+(shown by corfu). clangd reads =compile_commands.json=; it is found via PATH
+(exec-path-from-shell) or the project's flake (envrc).
+
+Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
+=M-g p= (next-error) are not wired to flymake, so they are bound explicitly
+under the classic =C-c != prefix: =C-c ! n= next, =C-c ! p= previous, =C-c ! l=
+list buffer diagnostics.
 
 Buffer-word completion: the built-in =dabbrev= (=M-/=) completes the word at
 point from buffer contents. It is *not* part of the corfu popup -- to add
