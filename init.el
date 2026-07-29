@@ -73,7 +73,7 @@
   ("C-c a" . org-agenda)
   ("C-c c" . org-capture)
   :custom
-  (org-agenda-files '("~/org-notes-proto/todo.org") "Tentative agenda file I am currently using.")
+  (org-agenda-files '("~/org-notes-proto/todo.org" "~/org-notes-proto/now.org") "Tentative agenda file I am currently using.")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
@@ -117,16 +117,17 @@
 
 ;; Consult: a collection of practical search/navigation commands built on top
 ;; of the minibuffer completion (vertico). Many commands show a live preview.
-;; Standard keys (C-x b, C-s, M-y, M-g g) are kept; consult is bound to free
-;; keys so the two can be compared side by side.
+;; These upgrade the standard keys in place (C-x b, M-y, C-s, M-g g); plain
+;; isearch-forward moves to M-s s (see the Keybindings section).
 (use-package consult
   :ensure t
-  :bind (("C-c b" . consult-buffer)   ; like C-x b, plus recent files/bookmarks
-         ("C-c y" . consult-yank-pop)  ; like M-y, pick from the kill-ring
-         ("M-s l" . consult-line)      ; incremental search within this buffer
-         ("M-s g" . consult-grep)      ; grep across files
-         ("M-s r" . consult-ripgrep)   ; ripgrep across the project
+  :bind (("C-x b" . consult-buffer)    ; replaces switch-to-buffer (+ recent, bookmarks)
+         ("M-y"   . consult-yank-pop)   ; replaces yank-pop (preview the kill-ring)
+         ("C-s"   . consult-line)       ; replaces isearch-forward (now on M-s s)
+         ("M-g g" . consult-goto-line)  ; replaces goto-line (with preview)
          ("M-g i" . consult-imenu)      ; jump to a function/heading
+         ("M-s g" . consult-grep)       ; grep across files
+         ("M-s r" . consult-ripgrep)    ; ripgrep across the project
          ;; Upgrade the standard bookmark jump (C-x r b): consult-bookmark adds
          ;; a preview and can create a bookmark on the fly. C-x r m (set) and
          ;; C-x r l (list) stay as the built-in bookmark commands.
@@ -282,11 +283,12 @@
 ;; binding with M-x describe-personal-keybindings.
 (use-package emacs
   :ensure nil
-  :bind (;; Make the help prefix easier to reach.
-         ("M-?" . help-command)
-         ("C-x ?" . help-command)
-         ;; xref: M-. (xref-find-definitions) works, but M-, is swallowed by
-         ;; macOS (Option+comma) and M-? is help above, so give go-back and
-         ;; find-references reliable alternatives.
-         ("C-c ," . xref-go-back)
-         ("C-c r" . xref-find-references)))
+  :bind (;; Plain isearch-forward, relocated from C-s (now consult-line). C-r
+         ;; keeps the default isearch-backward.
+         ("M-s s" . isearch-forward)
+         ;; xref navigation on the default keys: M-. definitions (default,
+         ;; unbound here), M-, go-back, M-? find-references. M-? had been
+         ;; rebound to help-command (a pre-GUI leftover; help stays on C-h), and
+         ;; M-, had been shadowed by AeroSpace's alt-comma binding -- now freed.
+         ("M-," . xref-go-back)
+         ("M-?" . xref-find-references)))
