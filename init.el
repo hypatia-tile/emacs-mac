@@ -126,7 +126,11 @@
          ("M-s l" . consult-line)      ; incremental search within this buffer
          ("M-s g" . consult-grep)      ; grep across files
          ("M-s r" . consult-ripgrep)   ; ripgrep across the project
-         ("M-g i" . consult-imenu)))   ; jump to a function/heading
+         ("M-g i" . consult-imenu)      ; jump to a function/heading
+         ;; Upgrade the standard bookmark jump (C-x r b): consult-bookmark adds
+         ;; a preview and can create a bookmark on the fly. C-x r m (set) and
+         ;; C-x r l (list) stay as the built-in bookmark commands.
+         ("C-x r b" . consult-bookmark)))
 
 ;; Corfu: in-buffer completion popup at point -- the buffer-local counterpart
 ;; to vertico (which handles the minibuffer). It displays whatever
