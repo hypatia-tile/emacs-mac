@@ -16,6 +16,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
+| Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
 | LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =C-c ,= back, =C-c r= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 | Theme             | tokyo-night                         | -                                      |
@@ -30,6 +31,10 @@ new features are bound to free keys so the two can be compared.
 not reach this GUI Emacs (Option+comma is swallowed below Emacs) and =M-?= is
 rebound to =help-command=. So =xref-go-back= is on =C-c ,= and
 =xref-find-references= on =C-c r=.
+
+*Bookmarks:* the built-in bookmark system is used (=C-x r m= set, =C-x r l=
+list), with =C-x r b= upgraded to =consult-bookmark= (preview + create).
+Bookmarks persist to =~/.emacs.d/bookmarks= (gitignored; personal locations).
 
 * Completion and LSP
 Two independent completion layers, by design:
