@@ -10,6 +10,9 @@ backup
 # compiled tree-sitter grammars (machine-specific, rebuilt on demand)
 /tree-sitter/
 
+# saved bookmarks (personal, machine-specific file locations)
+/bookmarks
+
 # -*- mode: gitignore; -*-
 *~
 \#*\#
