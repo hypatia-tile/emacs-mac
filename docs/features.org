@@ -10,27 +10,31 @@ companion to the inline comments in =init.el= and the operational notes in
 | Minibuffer UI     | vertico                             | (automatic)                            |
 | Filtering         | orderless                           | (automatic)                            |
 | Annotations       | marginalia                          | (automatic)                            |
-| Search / navigate | consult                             | =C-c b= buffer, =C-c y= yank-pop,      |
-|                   |                                     | =M-s l= line, =M-s g= grep,            |
-|                   |                                     | =M-s r= ripgrep, =M-g i= imenu         |
+| Search / navigate | consult                             | =C-x b= buffer, =M-y= yank-pop,        |
+|                   |                                     | =C-s= line, =M-g g= goto-line,         |
+|                   |                                     | =M-s g= grep, =M-s r= ripgrep, =M-g i= imenu |
+| Search (isearch)  | built-in                            | =M-s s= forward, =C-r= backward         |
 | In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
 | Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
-| LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =C-c ,= back, =C-c r= refs, |
+| LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =M-,= back, =M-?= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
 | Terminal          | vterm                               | =C-c t=                                |
 
-Standard keys (=C-x b=, =C-s=, =M-y=, =M-g g=) are intentionally left intact;
-new features are bound to free keys so the two can be compared.
+Personal bindings stay within standard Emacs keys (no macOS Super/Command
+leader). Where a package is a strict upgrade it replaces the standard key in
+place: =C-x b=, =M-y=, =C-s=, =M-g g= now run the consult versions (plain
+isearch-forward moved to =M-s s=). List every personal binding with
+=M-x describe-personal-keybindings=.
 
-*xref navigation note:* =M-.= (=xref-find-definitions=) works, but =M-,= does
-not reach this GUI Emacs (Option+comma is swallowed below Emacs) and =M-?= is
-rebound to =help-command=. So =xref-go-back= is on =C-c ,= and
-=xref-find-references= on =C-c r=.
+*xref navigation:* the default keys -- =M-.= definitions, =M-,= go-back, =M-?=
+find-references. (=M-,= had been shadowed by AeroSpace's =alt-comma= window
+binding, not by Emacs; freeing it in AeroSpace fixed it. =M-?= was previously a
+leftover help rebind -- help stays on =C-h=.)
 
 *Bookmarks:* the built-in bookmark system is used (=C-x r m= set, =C-x r l=
 list), with =C-x r b= upgraded to =consult-bookmark= (preview + create).
