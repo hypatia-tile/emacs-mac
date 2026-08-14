@@ -255,6 +255,22 @@
 
 ;;; Files & editing
 
+;; Auto-revert: keep file-visiting buffers in sync with on-disk changes made
+;; by external processes -- agents (claude/codex) editing files, magit branch
+;; switches, etc. Emacs otherwise only notices at the next save and warns;
+;; auto-revert reloads *unmodified* buffers automatically. A buffer with unsaved
+;; edits is never clobbered -- that conflict is left for manual resolution. On
+;; macOS this rides kqueue file notifications, with a 5s polling fallback.
+(use-package autorevert
+  :ensure nil
+  ;; Parked: also auto-refresh non-file buffers (Dired listings, Buffer Menu)
+  ;; so a directory view reflects files an agent adds/removes. Beyond the
+  ;; current need (file-buffer sync); enable if Dired staleness starts to bite.
+  ;; :custom
+  ;; (global-auto-revert-non-file-buffers t)
+  :init
+  (global-auto-revert-mode))
+
 (add-to-list 'auto-mode-alist '("\\.foo\\'" . c-mode))
 (add-to-list 'auto-mode-alist '("\\.notes\\'" . org-mode))
 
