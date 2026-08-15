@@ -72,4 +72,18 @@ or
 + =M-:= query the live Emacs.
 + Write test script using =emacs --batch --eval=.
 * Reload
-** TODO TO BE DEFINED
+Emacs reads =init.el= once, at startup; editing the file does not touch
+the running session until the new code is evaluated. Two built-in tools
+cover this, picked by how much changed:
+
++ *One form* -- put point inside the edited =(use-package ...)= (or any
+  top-level form) and press =C-M-x= (=eval-defun=). Only that form
+  re-runs, so it is always safe. This is the day-to-day motion.
++ *Everything / when in doubt* -- =M-x restart-emacs= reloads the whole
+  config in a pristine session.
+
+Re-evaluating the /entire/ =init.el= in place (=eval-buffer=) is
+deliberately avoided: re-evaluation is not idempotent in general
+(duplicated hooks, toggled modes, re-run side effects), so it becomes a
+latent footgun as the config grows. Prefer per-form =C-M-x=, or a clean
+=restart-emacs=.
