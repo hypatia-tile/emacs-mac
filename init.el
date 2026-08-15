@@ -192,10 +192,15 @@
 ;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
 ;; do the rest: eldoc (hover), flymake (diagnostics, see below), xref (M-. ;
 ;; go-back on C-c ,), completion-at-point (shown by corfu). Rename:
-;; M-x eglot-rename.
+;; M-x eglot-rename. Format the buffer with C-c f (eglot-format-buffer), which
+;; drives the server's formatter (e.g. rust-analyzer -> rustfmt); M-x
+;; eglot-format handles a region. The key lives in eglot-mode-map, so it is
+;; active only in LSP-managed buffers.
 (use-package eglot
   :ensure nil
-  :hook ((c-mode c++-mode rust-ts-mode) . eglot-ensure))
+  :hook ((c-mode c++-mode rust-ts-mode) . eglot-ensure)
+  :bind (:map eglot-mode-map
+              ("C-c f" . eglot-format-buffer)))
 
 ;; Rust: use the built-in tree-sitter mode. It needs the Rust grammar, so
 ;; record its source and install it once if missing -- but only under a window
