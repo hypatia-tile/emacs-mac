@@ -246,7 +246,22 @@
   ;; Ask for the master file in multi-file documents instead of guessing.
   (TeX-master nil)
   ;; Produce PDF via pdflatex, not DVI.
-  (TeX-PDF-mode t))
+  (TeX-PDF-mode t)
+  ;; SyncTeX forward search: correlate source -> PDF so C-c C-v jumps Skim to
+  ;; the line at point. Enabling this also makes AUCTeX pass --synctex=1 to the
+  ;; TeX run. (Inverse search, PDF -> source, is intentionally skipped: it would
+  ;; need TeX-source-correlate-start-server plus a viewer hotkey, and the
+  ;; PDF->editor click collides with the window manager.)
+  (TeX-source-correlate-mode t)
+  ;; View PDFs in Skim (macOS, solid SyncTeX support).
+  (TeX-view-program-selection '((output-pdf "Skim")))
+  :config
+  ;; Skim's `displayline' does SyncTeX forward search: -b draws a reading bar
+  ;; at the target line, -g keeps Skim in the background (drop -g to raise Skim
+  ;; on each jump). %n line, %o output PDF, %b the source .tex.
+  (add-to-list 'TeX-view-program-list
+               '("Skim"
+                 "/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b")))
 
 
 ;;; Appearance
