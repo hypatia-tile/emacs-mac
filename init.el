@@ -228,6 +228,26 @@
               ("C-c ! p" . flymake-goto-prev-error)
               ("C-c ! l" . flymake-show-buffer-diagnostics)))
 
+;; AUCTeX: a full LaTeX editing environment (LaTeX-mode, compilation, math
+;; input, folding). The package exposes no `auctex' feature to require, so the
+;; use-package is named after a real feature it ships (`tex') while
+;; `:ensure auctex' installs the package. LaTeX-mode is AUCTeX's enhanced
+;; replacement for the built-in latex-mode. Skim/SyncTeX viewing and the texlab
+;; LSP layer are added in later steps; this block is editing + compilation.
+;; The TeX toolchain lives in a per-project nix flake, applied buffer-locally
+;; by envrc -- approve it once per document tree with C-c e a (envrc-allow).
+(use-package tex
+  :ensure auctex
+  :custom
+  ;; Parse the document (and cache the parse) so completion of macros, labels,
+  ;; \ref/\cite targets and environments is context-aware.
+  (TeX-auto-save t)
+  (TeX-parse-self t)
+  ;; Ask for the master file in multi-file documents instead of guessing.
+  (TeX-master nil)
+  ;; Produce PDF via pdflatex, not DVI.
+  (TeX-PDF-mode t))
+
 
 ;;; Appearance
 
