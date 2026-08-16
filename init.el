@@ -187,7 +187,9 @@
 ;;; Languages & LSP
 
 ;; Eglot (built-in): a minimal LSP client. Auto-start the server for C/C++
-;; (clangd) and Rust (rust-analyzer). Servers are found via PATH
+;; (clangd), Rust (rust-analyzer), and LaTeX (texlab; AUCTeX's LaTeX-mode is
+;; recognized as a tex-mode derivative by eglot's built-in server table).
+;; Servers are found via PATH
 ;; (exec-path-from-shell) or, inside a project, via the flake toolchain that
 ;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
 ;; do the rest: eldoc (hover), flymake (diagnostics, see below), xref (M-. ;
@@ -198,9 +200,17 @@
 ;; active only in LSP-managed buffers.
 (use-package eglot
   :ensure nil
-  :hook ((c-mode c++-mode rust-ts-mode) . eglot-ensure)
+  :hook ((c-mode c++-mode rust-ts-mode LaTeX-mode) . eglot-ensure)
   :bind (:map eglot-mode-map
-              ("C-c f" . eglot-format-buffer)))
+              ("C-c f" . eglot-format-buffer))
+  :config
+  ;; eglot's built-in tex entry offers a choice between digestif and texlab and
+  ;; picks digestif -- which has no formatting -- when both are present (the TeX
+  ;; Live flake ships both). Pin tex modes (incl. AUCTeX's LaTeX-mode, a
+  ;; tex-mode derivative) to texlab so completion, diagnostics and C-c f all
+  ;; come from one server. texlab formats out of the box via latexindent, so no
+  ;; extra workspace configuration is needed.
+  (add-to-list 'eglot-server-programs '((tex-mode) . ("texlab"))))
 
 ;; Rust: use the built-in tree-sitter mode. It needs the Rust grammar, so
 ;; record its source and install it once if missing -- but only under a window
