@@ -187,8 +187,10 @@
 ;;; Languages & LSP
 
 ;; Eglot (built-in): a minimal LSP client. Auto-start the server for C/C++
-;; (clangd), Rust (rust-analyzer), and LaTeX (texlab; AUCTeX's LaTeX-mode is
-;; recognized as a tex-mode derivative by eglot's built-in server table).
+;; (clangd), Rust (rust-analyzer), TypeScript/TSX (typescript-language-server;
+;; eglot's built-in server table already maps both ts modes to it, so no
+;; `eglot-server-programs' entry is needed), and LaTeX (texlab; AUCTeX's
+;; LaTeX-mode is recognized as a tex-mode derivative by that same table).
 ;; Servers are found via PATH
 ;; (exec-path-from-shell) or, inside a project, via the flake toolchain that
 ;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
@@ -200,7 +202,8 @@
 ;; active only in LSP-managed buffers.
 (use-package eglot
   :ensure nil
-  :hook ((c-mode c++-mode rust-ts-mode LaTeX-mode) . eglot-ensure)
+  :hook ((c-mode c++-mode rust-ts-mode typescript-ts-mode tsx-ts-mode LaTeX-mode)
+         . eglot-ensure)
   :bind (:map eglot-mode-map
               ("C-c f" . eglot-format-buffer))
   :config
@@ -226,6 +229,41 @@
   (when (and (memq window-system '(mac ns x))
              (not (treesit-language-available-p 'rust)))
     (treesit-install-language-grammar 'rust)))
+
+;; TypeScript: use the built-in tree-sitter modes. `typescript-ts-mode' and
+;; `tsx-ts-mode' both live in typescript-ts-mode.el, but they are siblings (both
+;; derive from `typescript-ts-base-mode'), so each needs its own `:mode' entry
+;; and its own eglot hook above. Unlike Rust, the two grammars share one
+;; repository and sit in subdirectories, hence the longer source recipe
+;; (LANG . (URL REVISION SOURCE-DIR)); REVISION nil means the default branch.
+;; The install is guarded exactly like Rust's: only under a window system, so
+;; the batch health-check stays offline and fast.
+;;
+;; typescript-language-server does not ship tsserver itself -- it resolves
+;; `typescript/lib/tsserver.js' from the project's node_modules. So eglot fails
+;; with "Could not find a valid TypeScript installation." until `npm install'
+;; has run; that is the intended coupling (the LSP then matches the project's
+;; own TypeScript version). Note also that C-c f runs tsserver's built-in
+;; formatter here -- not Prettier, and it ignores .prettierrc. ESLint
+;; diagnostics are out of this server's scope. Both are deferred until they
+;; actually bite. Indentation needs no setting: `typescript-ts-mode-indent-offset'
+;; already defaults to 2, matching the Next.js / Prettier convention.
+(use-package typescript-ts-mode
+  :ensure nil
+  :mode (("\\.ts\\'"  . typescript-ts-mode)
+         ("\\.tsx\\'" . tsx-ts-mode))
+  :init
+  (require 'treesit)
+  (dolist (src '((typescript
+                  "https://github.com/tree-sitter/tree-sitter-typescript"
+                  nil "typescript/src")
+                 (tsx
+                  "https://github.com/tree-sitter/tree-sitter-typescript"
+                  nil "tsx/src")))
+    (add-to-list 'treesit-language-source-alist src)
+    (when (and (memq window-system '(mac ns x))
+               (not (treesit-language-available-p (car src))))
+      (treesit-install-language-grammar (car src)))))
 
 ;; Flymake diagnostics navigation. Modern flymake ships no default keys and
 ;; next-error (M-g n / M-g p) is not wired to flymake here, so bind the flymake
