@@ -131,6 +131,16 @@ running inside vterm still receives Escape.
   =(region-active-p)= already encodes "is a selection in progress", so the
   layer needs no state variable of its own. (Consequence: with a selection
   active you cannot leave with =i= -- press =<escape>= to drop it first.)
+
+  This is where the layer's one external dependency lives: =region-active-p=
+  is =(and transient-mark-mode mark-active ...)=, so the whole selection half
+  -- =i= / =a= as prefixes, and =y= / =d=, which go through =use-region-p= --
+  needs =transient-mark-mode= on. It is on by default in an interactive Emacs
+  and nothing here turns it off, so this only bites in =emacs --batch=, where
+  it defaults to nil. A batch test of =viw= consequently /looks/ like a bug in
+  the text objects: =v= sets the mark, =region-active-p= stays nil, =i= is
+  read as the exit key, and the rest of the sequence types itself into the
+  buffer. Enable it explicitly in any batch test of this layer.
 - *Cursor shape as the indicator* -- box while navigating, bar while typing.
   =cursor-type= is buffer-local, so no hook has to track the current buffer.
   Cursor /colour/ is a face, i.e. frame-wide, and would have needed one.
