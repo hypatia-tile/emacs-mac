@@ -616,14 +616,28 @@ enter the navigation layer in an editing buffer, and quit anywhere
 else.  The last clause also stands in for \\`ESC ESC ESC', which
 binding this key costs us.
 
-An editing buffer is recognised by `a' still typing an `a': that
-rules out magit, dired, help, Info and friends, where the letter
-keys are already commands, without maintaining a list of modes."
+An editing buffer is recognised by `a' still typing an `a', which
+rules out magit, dired, help, Info and friends without maintaining
+a list of modes.  That takes two questions, not one:
+
+  * is `a' fundamentally a self-inserting key?  Asked with
+    `key-binding''s NO-REMAP argument, so a mode that customises
+    typing still qualifies -- org-mode remaps `self-insert-command'
+    to `org-self-insert-command' for table auto-alignment, and used
+    to be locked out by the single-question version.  This rejects
+    dired, which binds `a' outright.
+  * has that been switched off?  `suppress-keymap' -- which the
+    special modes use, and which `my-nav-mode-map' uses on itself --
+    disables typing through the very same remap, pointing it at
+    `undefined'.  Reading the remap is the only way to tell
+    \"customised typing\" from \"no typing\"."
   (interactive)
   (cond
    ((minibufferp) (abort-minibuffers))
    (my-nav-mode (when (region-active-p) (deactivate-mark)))
-   ((eq (key-binding "a") 'self-insert-command) (my-nav-mode 1))
+   ((and (eq (key-binding "a" nil t) 'self-insert-command)
+         (not (eq (key-binding "a") 'undefined)))
+    (my-nav-mode 1))
    (t (keyboard-quit))))
 
 

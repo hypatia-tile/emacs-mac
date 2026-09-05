@@ -151,19 +151,40 @@ string that reports the word at point rather than the enclosing brackets.
 =(nth 1 (syntax-ppss))= is used instead -- a string is not a list to the
 parser, so point inside one still finds the brackets around it.
 
-** Known gap: org-mode
-=<escape>= does not enter the layer in org-mode. The entry test asks whether
-=a= still types an =a= (=(eq (key-binding "a") 'self-insert-command)=), which
-is what keeps magit, dired, help and Info out without maintaining a list of
-modes. org-mode remaps =self-insert-command= to =org-self-insert-command= (for
-table auto-alignment), so the test fails and =<escape>= falls through to
-=keyboard-quit=. The layer itself works correctly in org buffers once entered
-(=M-x my-nav-mode=); only the entry test is wrong.
+** How the entry test recognises an editing buffer
+The rule is "=a= still types an =a=", which keeps magit, dired, help and Info
+out without maintaining a list of modes. Getting it right takes *two*
+questions, not one (issue #2):
 
-Note that =NO-REMAP= (=(key-binding "a" nil t)=) is /not/ the fix: special
-modes suppress =a= through that very same remap mechanism
-(=suppress-keymap=), so stripping remaps would let =<escape>= into magit,
-help and =special-mode= buffers.
+#+BEGIN_SRC elisp
+  (and (eq (key-binding "a" nil t) 'self-insert-command)   ; fundamentally a text key?
+       (not (eq (key-binding "a") 'undefined)))            ; and not switched off?
+#+END_SRC
+
+- The first clause passes =NO-REMAP=, so a mode that /customises/ typing still
+  qualifies. org-mode remaps =self-insert-command= to =org-self-insert-command=
+  for table auto-alignment; the original single-clause test asked only for
+  =self-insert-command= and therefore locked org buffers out entirely. This
+  clause is also what rejects dired, which binds =a= outright
+  (=dired-find-alternate-file=) rather than by remapping.
+- The second clause reads the remap. =suppress-keymap= -- which the special
+  modes use, and which =my-nav-mode-map= applies to itself via
+  =defvar-keymap :suppress t= -- disables typing through that same remap,
+  pointing it at =undefined=. Reading where the remap leads is the only way to
+  tell "customised typing" from "no typing".
+
+Two rejected alternatives, recorded so they are not re-attempted:
+
+- =NO-REMAP= *alone* is not the fix. It would let =<escape>= into
+  =special-mode=, =help-mode= and magit, for exactly the reason above.
+- =(derived-mode-p 'text-mode 'prog-mode)= is not usable either: =conf-mode=
+  (=.envrc=, config files), =fundamental-mode=, =comint-mode= and =eshell-mode=
+  derive from neither and would all be excluded.
+
+Verified across every mode in this config -- entering in =text=, =org=,
+=emacs-lisp=, =lisp-interaction=, =fundamental=, =conf=, =prog=, =rust-ts=,
+=typescript-ts=, =LaTeX=, =comint= and =eshell=; staying out of =special=,
+=dired=, =help=, =Info=, =Buffer-menu= and =tabulated-list=.
 
 ** Tuning the keys
 =defvar-keymap= has =defvar= semantics, so =C-M-x= on the keymap does not
