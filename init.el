@@ -380,6 +380,253 @@
 (setq-default indent-tabs-mode nil)
 
 
+;;; Modal navigation
+
+;; A transient vi-style layer for the times when reading and moving dominate
+;; over typing: `<escape>' enters it, `i' leaves it. Inside, the letter keys
+;; are motions instead of self-inserting characters, `v' starts a selection,
+;; and `y' / `d' copy / cut it. It is deliberately NOT a full vi emulation --
+;; there is no operator+motion grammar (`dw', `ciw', `.'); `viwd' covers that
+;; case with one extra keystroke, and the state machine such a grammar needs
+;; is exactly what this layer avoids.
+;;
+;; Everything below is built from stock Emacs commands. The two pieces that
+;; carry the design are:
+;;   * `emulation-mode-map-alists' -- guarantees this map beats every minor
+;;     mode map, including ddskk's `skk-j-mode-map' (which binds `h' to
+;;     `skk-insert'). Registration order in `minor-mode-map-alist' would
+;;     otherwise decide the winner, and ddskk loads lazily. Leaving skk's own
+;;     state untouched means Japanese input simply resumes on exit.
+;;   * a `menu-item' `:filter' on `i' and `a' -- with a selection active they
+;;     become the vi "inner" / "around" prefixes, without one `i' is the exit
+;;     key. `(region-active-p)' already encodes "is a selection in progress",
+;;     so no extra state variable is needed.
+
+;; Cursor shape is the mode indicator: a box while navigating, a bar while
+;; typing. `cursor-type' is buffer-local, so this needs no hook to track the
+;; current buffer -- the minor mode sets it, and turning off kills the local
+;; binding to fall back to this default. (Cursor *colour* is a face, i.e.
+;; frame-wide, and would have needed exactly that hook.)
+(setq-default cursor-type 'bar)
+
+
+;;;; Text objects
+
+(defun my-nav--list-bounds ()
+  "Return (BEG . END) of the innermost bracketed form around point.
+`bounds-of-thing-at-point' cannot be used for this: inside a string
+its `list' thing reports the word at point instead of the enclosing
+brackets.  The parser state does the right thing -- a string is not
+a list, so point inside one still finds the brackets around it."
+  (let ((open (nth 1 (syntax-ppss))))
+    (unless open
+      (user-error "Not inside brackets"))
+    (save-excursion
+      (goto-char open)
+      (cons open (progn (forward-sexp) (point))))))
+
+(defun my-nav--mark (thing inner)
+  "Select THING at point, leaving point at its end.
+With INNER non-nil, exclude the delimiters of a `string' or `list'
+-- for the other things the delimiter-less bounds are all there is,
+which is why only \" and ( get an \"around\" binding."
+  (let ((bounds (if (eq thing 'list)
+                    (my-nav--list-bounds)
+                  (bounds-of-thing-at-point thing))))
+    (unless bounds
+      (user-error "No %s at point" thing))
+    (let ((beg (car bounds))
+          (end (cdr bounds)))
+      (when (and inner (memq thing '(string list)))
+        (setq beg (1+ beg)
+              end (1- end)))
+      (set-mark beg)
+      (goto-char end)
+      (activate-mark))))
+
+;; Named commands rather than generated closures: `init.el' has no
+;; `lexical-binding' cookie, and named commands are what which-key and
+;; `describe-key' display.
+(defun my-nav-mark-inner-word ()      "Select the word at point."          (interactive) (my-nav--mark 'word t))
+(defun my-nav-mark-inner-symbol ()    "Select the symbol at point."        (interactive) (my-nav--mark 'symbol t))
+(defun my-nav-mark-inner-string ()    "Select a string without its quotes." (interactive) (my-nav--mark 'string t))
+(defun my-nav-mark-inner-list ()      "Select a bracketed form's contents." (interactive) (my-nav--mark 'list t))
+(defun my-nav-mark-inner-paragraph () "Select the paragraph at point."     (interactive) (my-nav--mark 'paragraph t))
+(defun my-nav-mark-inner-defun ()     "Select the function definition at point." (interactive) (my-nav--mark 'defun t))
+(defun my-nav-mark-around-string ()   "Select a string including its quotes." (interactive) (my-nav--mark 'string nil))
+(defun my-nav-mark-around-list ()     "Select a bracketed form including its brackets." (interactive) (my-nav--mark 'list nil))
+
+(defvar-keymap my-nav-inner-map
+  :doc "Vi \"inner\" text objects, reachable as `i' while a selection is active."
+  "w" #'my-nav-mark-inner-word
+  "s" #'my-nav-mark-inner-symbol
+  "\"" #'my-nav-mark-inner-string
+  "(" #'my-nav-mark-inner-list
+  "p" #'my-nav-mark-inner-paragraph
+  "f" #'my-nav-mark-inner-defun)
+
+(defvar-keymap my-nav-around-map
+  :doc "Vi \"around\" text objects, reachable as `a' while a selection is active.
+Only the delimited things appear here: for a word or a paragraph
+`bounds-of-thing-at-point' returns the same span either way."
+  "\"" #'my-nav-mark-around-string
+  "(" #'my-nav-mark-around-list)
+
+
+;;;; Commands
+
+(defun my-nav-exit ()
+  "Leave `my-nav-mode' and go back to ordinary Emacs editing."
+  (interactive)
+  (my-nav-mode -1))
+
+(defun my-nav-visual ()
+  "Start a selection, or cancel the one in progress."
+  (interactive)
+  (if (region-active-p)
+      (deactivate-mark)
+    (set-mark-command nil)))
+
+(defun my-nav-visual-line (n)
+  "Select N whole lines starting at the current one."
+  (interactive "p")
+  (beginning-of-line)
+  (set-mark (point))
+  (forward-line n)
+  (activate-mark))
+
+(defun my-nav-copy ()
+  "Copy the selection to the kill ring."
+  (interactive)
+  (if (use-region-p)
+      (kill-ring-save (region-beginning) (region-end))
+    (message "No region -- press v first")))
+
+(defun my-nav-cut ()
+  "Cut the selection to the kill ring."
+  (interactive)
+  (if (use-region-p)
+      (kill-region (region-beginning) (region-end))
+    (message "No region -- press v first")))
+
+(defun my-nav-goto-line-or-end (n)
+  "Go to line N, or to the end of the buffer when N is nil.
+Vi's `G'.  Plain `end-of-buffer' reads a prefix argument as tenths
+of the buffer, so `10G' would land at the end rather than line 10."
+  (interactive "P")
+  (if n
+      (progn (goto-char (point-min))
+             (forward-line (1- (prefix-numeric-value n))))
+    (goto-char (point-max))))
+
+(defun my-nav-scroll-half-forward ()
+  "Scroll forward half a window (vi's \\`C-d')."
+  (interactive)
+  (scroll-up-command (max 1 (/ (window-body-height) 2))))
+
+(defun my-nav-scroll-half-backward ()
+  "Scroll backward half a window (vi's \\`C-u')."
+  (interactive)
+  (scroll-down-command (max 1 (/ (window-body-height) 2))))
+
+
+;;;; Keymap and mode
+
+(defvar-keymap my-nav-g-map
+  :doc "The `g' prefix of `my-nav-mode-map'."
+  "g" #'beginning-of-buffer)
+
+(defvar-keymap my-nav-z-map
+  :doc "The `z' prefix of `my-nav-mode-map'."
+  "z" #'recenter-top-bottom)
+
+;; `:suppress t' remaps `self-insert-command' to `undefined', so a stray
+;; letter can no longer type itself into the buffer, and binds the digits to
+;; `digit-argument' -- which is where counts (3j, 5w, 10G) come from for free.
+;; `0' is then re-bound to beginning-of-line, as in vi: once a count is under
+;; way `universal-argument-map' takes over and its own `0' keeps the count
+;; going, so `10G' still works.
+(defvar-keymap my-nav-mode-map
+  :doc "Keymap for `my-nav-mode'."
+  :suppress t
+  ;; motion
+  "h" #'backward-char
+  "l" #'forward-char
+  "j" #'next-line
+  "k" #'previous-line
+  "w" #'forward-to-word            ; vi's w: start of the next word
+  "e" #'forward-word               ; vi's e: end of this word
+  "b" #'backward-word
+  "0" #'move-beginning-of-line
+  "^" #'back-to-indentation
+  "$" #'move-end-of-line
+  "{" #'backward-paragraph
+  "}" #'forward-paragraph
+  "G" #'my-nav-goto-line-or-end
+  "g" my-nav-g-map
+  ;; screen
+  "C-d" #'my-nav-scroll-half-forward
+  "C-u" #'my-nav-scroll-half-backward
+  "z" my-nav-z-map
+  ;; selection
+  "v" #'my-nav-visual
+  "V" #'my-nav-visual-line
+  ;; copy / cut / paste / undo
+  "y" #'my-nav-copy
+  "d" #'my-nav-cut
+  "p" #'yank
+  "P" #'consult-yank-pop            ; pick from the kill ring, with preview
+  "u" #'undo)
+
+;; `i' and `a' depend on whether a selection is in progress. A `:filter'
+;; returning a keymap makes the key a prefix; returning a symbol makes it a
+;; command; returning nil leaves it unbound, so `a' falls through to the
+;; `self-insert-command' remap above and does nothing.
+(keymap-set my-nav-mode-map "i"
+            `(menu-item "" nil :filter
+                        ,(lambda (_) (if (region-active-p)
+                                         my-nav-inner-map
+                                       'my-nav-exit))))
+(keymap-set my-nav-mode-map "a"
+            `(menu-item "" nil :filter
+                        ,(lambda (_) (and (region-active-p) my-nav-around-map))))
+
+(define-minor-mode my-nav-mode
+  "Transient vi-style layer for moving, selecting, copying and cutting.
+Enter with \\`<escape>', leave with \\`i'.  While a selection is
+active \\`i' is the \"inner\" text-object prefix instead, so leave
+by cancelling the selection with \\`<escape>' first."
+  :lighter " NAV"
+  :keymap my-nav-mode-map
+  (if my-nav-mode
+      (setq cursor-type 'box)
+    (kill-local-variable 'cursor-type)))
+
+;; Beat every minor mode map, whatever the order they were registered in.
+(defvar my-nav-emulation-alist `((my-nav-mode . ,my-nav-mode-map))
+  "Entry for `emulation-mode-map-alists', giving `my-nav-mode-map' priority
+over all minor mode keymaps -- notably ddskk's, which binds the motion
+letters while Japanese input is on.")
+(add-to-list 'emulation-mode-map-alists 'my-nav-emulation-alist)
+
+(defun my-nav-escape ()
+  "Cancel, or enter `my-nav-mode' where text is normally typed.
+One meaning for one key: abort the minibuffer, drop a selection,
+enter the navigation layer in an editing buffer, and quit anywhere
+else.  The last clause also stands in for \\`ESC ESC ESC', which
+binding this key costs us.
+
+An editing buffer is recognised by `a' still typing an `a': that
+rules out magit, dired, help, Info and friends, where the letter
+keys are already commands, without maintaining a list of modes."
+  (interactive)
+  (cond
+   ((minibufferp) (abort-minibuffers))
+   (my-nav-mode (when (region-active-p) (deactivate-mark)))
+   ((eq (key-binding "a") 'self-insert-command) (my-nav-mode 1))
+   (t (keyboard-quit))))
+
+
 ;;; Keybindings (global)
 
 ;; Global key tweaks for built-in commands, kept in one place. Package-specific
@@ -395,4 +642,9 @@
          ;; rebound to help-command (a pre-GUI leftover; help stays on C-h), and
          ;; M-, had been shadowed by AeroSpace's alt-comma binding -- now freed.
          ("M-," . xref-go-back)
-         ("M-?" . xref-find-references)))
+         ("M-?" . xref-find-references)
+         ;; Enter the vi-style navigation layer (see Modal navigation above).
+         ;; Escape stops being the `ESC' (meta) prefix here; `C-[' still
+         ;; produces it, and Option is meta on macOS, so the practical loss is
+         ;; `ESC ESC ESC' -- `my-nav-escape' quits in its place.
+         ("<escape>" . my-nav-escape)))
