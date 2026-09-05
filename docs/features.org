@@ -24,6 +24,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
 | Terminal          | vterm                               | =C-c t=                                |
+| Modal navigation  | my-nav-mode (hand-written)          | =<escape>= enter, =i= exit             |
 
 Personal bindings stay within standard Emacs keys (no macOS Super/Command
 leader). Where a package is a strict upgrade it replaces the standard key in
@@ -72,6 +73,102 @@ the global =completion-at-point-functions=. These show up in ordinary buffers;
 in eglot (LSP) buffers eglot installs its own buffer-local capf, so LSP
 completion stays primary there (merging buffer words into LSP buffers with
 =cape-capf-super= is deferred).
+
+* Modal navigation (=my-nav-mode=)
+A transient vi-style layer for the times when reading and moving dominate
+over typing. =<escape>= enters it, =i= leaves it. Inside, the letter keys are
+motions instead of self-inserting characters. It is hand-written (no evil, no
+meow) and built entirely from stock Emacs commands -- see the =;;; Modal
+navigation= section of =init.el=.
+
+It is deliberately *not* a full vi emulation. There is no operator+motion
+grammar (=dw=, =ciw=, =.=): =viwd= covers that case with one extra keystroke,
+and the state machine such a grammar would need is exactly what this layer
+avoids.
+
+** Keys
+| Group     | Keys                                                            |
+|-----------+-----------------------------------------------------------------|
+| Motion    | =h= =l= char, =j= =k= line, =w= next word, =e= word end, =b= back |
+|           | =0= =^= =$= line, ={= =}= paragraph, =gg= top, =G= bottom / line N |
+| Counts    | =1=-=9= then the motion: =3j=, =5w=, =10G=                      |
+| Screen    | =C-d= =C-u= half screen, =zz= recenter                          |
+| Selection | =v= start / cancel, =V= whole lines                             |
+| Edit      | =y= copy, =d= cut, =p= paste, =P= paste from history, =u= undo  |
+| Objects   | =iw= word, =is= symbol, =i"= string, =i(= brackets, =ip= paragraph, =if= defun |
+|           | =a"= with quotes, =a(= with brackets (selection must be active)  |
+
+=y= and =d= need a selection; without one they only print =No region -- press
+v first=, so vi muscle memory (=d= then a motion) cannot delete a line by
+accident.
+
+** What =<escape>= does
+One key, one meaning -- cancel, or enter the layer where text is normally
+typed:
+| Where                       | Effect              |
+|-----------------------------+---------------------|
+| Minibuffer                  | =abort-minibuffers= |
+| Editing buffer, layer off   | enter the layer     |
+| Editing buffer, layer on    | drop the selection  |
+| Anywhere else               | =keyboard-quit=     |
+
+Binding =<escape>= costs its role as the =ESC= (meta) prefix. =C-[= still
+produces =ESC= and Option is meta on macOS, so the only practical loss is
+=ESC ESC ESC= (=keyboard-escape-quit=) -- the last row above stands in for it.
+vterm needs no special case: =vterm-mode-map= already binds =<escape>= to
+=vterm--self-insert=, and a major mode map shadows the global one, so Neovim
+running inside vterm still receives Escape.
+
+** Three decisions worth remembering
+- *=emulation-mode-map-alists=* -- the layer's keymap is registered there, not
+  merely as a minor mode map, so it beats *every* minor mode map. ddskk's
+  =skk-j-mode-map= binds =h= to =skk-insert=, and ddskk loads lazily, so
+  registration order in =minor-mode-map-alist= would otherwise decide the
+  winner. Because skk's own state is never touched, Japanese input simply
+  resumes on exit.
+- *=menu-item= =:filter= on =i= and =a=* -- with a selection active they are the
+  vi "inner" / "around" prefixes; without one, =i= is the exit key.
+  =(region-active-p)= already encodes "is a selection in progress", so the
+  layer needs no state variable of its own. (Consequence: with a selection
+  active you cannot leave with =i= -- press =<escape>= to drop it first.)
+- *Cursor shape as the indicator* -- box while navigating, bar while typing.
+  =cursor-type= is buffer-local, so no hook has to track the current buffer.
+  Cursor /colour/ is a face, i.e. frame-wide, and would have needed one.
+
+** Differences from vi, accepted on purpose
+- No =dw= / =ciw= / =.= -- use =viwd=.
+- No =x=; =d= always needs a selection.
+- =is= is *symbol*, not vi's sentence. In code =my_variable= is one symbol but
+  two words, and the symbol is nearly always what one wants.
+- No =aw= / =as= / =ap=: =bounds-of-thing-at-point= excludes surrounding
+  whitespace, so they would be identical to their =i= counterparts. Only the
+  delimited things (=a"=, =a(=) differ.
+- Text objects take no count (=v2iw= does nothing).
+- =p= inserts at point; vi pastes after the cursor.
+
+=i(= and =a(= do *not* use =bounds-of-thing-at-point='s =list= thing: inside a
+string that reports the word at point rather than the enclosing brackets.
+=(nth 1 (syntax-ppss))= is used instead -- a string is not a list to the
+parser, so point inside one still finds the brackets around it.
+
+** Known gap: org-mode
+=<escape>= does not enter the layer in org-mode. The entry test asks whether
+=a= still types an =a= (=(eq (key-binding "a") 'self-insert-command)=), which
+is what keeps magit, dired, help and Info out without maintaining a list of
+modes. org-mode remaps =self-insert-command= to =org-self-insert-command= (for
+table auto-alignment), so the test fails and =<escape>= falls through to
+=keyboard-quit=. The layer itself works correctly in org buffers once entered
+(=M-x my-nav-mode=); only the entry test is wrong.
+
+Note that =NO-REMAP= (=(key-binding "a" nil t)=) is /not/ the fix: special
+modes suppress =a= through that very same remap mechanism
+(=suppress-keymap=), so stripping remaps would let =<escape>= into magit,
+help and =special-mode= buffers.
+
+** Tuning the keys
+=defvar-keymap= has =defvar= semantics, so =C-M-x= on the keymap does not
+update an existing binding. Either evaluate =(keymap-set my-nav-mode-map "..."
+#'...)= directly, or =M-x restart-emacs=.
 
 * Per-directory environments (nix flake + direnv)
 This machine uses =direnv= + =nix-direnv= with a =.envrc= (=use flake=) per
