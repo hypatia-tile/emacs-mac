@@ -168,6 +168,32 @@
 
 ;;; Tools
 
+;; Project switching: ghq owns the clone layout under `ghq root', and asking
+;; it on each prompt keeps that listing the source of truth -- a repo cloned a
+;; minute ago shows up with no bookkeeping. project.el's own record of visited
+;; projects is switched off (see below), so the repos ghq does not manage are
+;; named here instead.
+(defconst my-project-extra-roots
+  '("~/.emacs.d/" "~/org-notes-proto/")
+  "Projects offered at `C-x p p' that ghq does not manage.")
+
+(defun my-ghq-prompt-project-dir ()
+  "Prompt for a ghq clone, or one of `my-project-extra-roots'."
+  (let* ((root (file-name-as-directory (car (process-lines "ghq" "root"))))
+         (clones (mapcar (lambda (repo)
+                           (file-name-as-directory (expand-file-name repo root)))
+                         (process-lines "ghq" "list"))))
+    (completing-read "Project: " (append clones my-project-extra-roots) nil t)))
+
+(use-package project
+  :ensure nil
+  :custom (project-prompter #'my-ghq-prompt-project-dir)
+  :config
+  ;; project.el otherwise appends every project visited to `project-list-file'.
+  ;; The candidates above are the whole source of truth, so keep that
+  ;; bookkeeping -- and the file it writes -- out of the picture.
+  (advice-add 'project-remember-project :override #'ignore))
+
 ;; Magit: a full-featured git interface. `C-x g' opens the status buffer,
 ;; from which staging, committing, pushing, branching, log browsing, etc. are
 ;; all a few keys away. Press `?' inside any magit buffer for a menu.
