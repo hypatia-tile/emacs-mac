@@ -17,6 +17,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
+| Project switching | project (built-in) + ghq            | =C-x p p= switch, =C-x p f= find-file  |
 | Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
 | LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =M-,= back, =M-?= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
@@ -73,6 +74,39 @@ the global =completion-at-point-functions=. These show up in ordinary buffers;
 in eglot (LSP) buffers eglot installs its own buffer-local capf, so LSP
 completion stays primary there (merging buffer words into LSP buffers with
 =cape-capf-super= is deferred).
+
+* Project switching (=C-x p p=, ghq)
+Repositories are cloned with =ghq=, which owns the layout under =ghq root=
+(=~/ghqrepo/<host>/<user>/<repo>=). The shell reaches them by piping =ghq list=
+into fzf; the Emacs equivalent needs no extra package, because vertico +
+orderless already do the filtering. Only the candidate list was missing.
+
+=project.el= normally offers just the projects it has already visited, which it
+persists to =project-list-file=. Instead, =project-prompter= (Emacs 30) is
+pointed at =my-ghq-prompt-project-dir=, which shells out to =ghq list= on every
+prompt. So =C-x p p= lists all ghq clones, a repo cloned a minute ago included,
+and =C-x p f=, =M-s r= (consult-ripgrep) and the rest of the =C-x p= map then
+act on the chosen project.
+
+Repositories =ghq= does not manage are named explicitly in
+=my-project-extra-roots= (currently =~/.emacs.d/= and =~/org-notes-proto/=);
+add a line when a new one starts to matter.
+
+** Why no state on disk
+=ghq list= is the source of truth, so project.el's own bookkeeping would only
+duplicate it -- and duplicate it badly: =project-known-project-roots= returns
+=abbreviate-file-name= paths with a trailing slash (=~/ghqrepo/.../repo/=)
+while the ghq listing is expanded and unslashed, so the two spellings of one
+repo never compare equal and both appear in the prompt. Rather than normalise
+and merge the two lists, the record is switched off:
+
+: (advice-add 'project-remember-project :override #'ignore)
+
+=project-list-file= is left at its default (=~/.emacs.d/projects=); nothing
+writes it any more, so the file stays absent and does not need gitignoring.
+Pointing it at =null-device= instead was rejected: project.el reads the file
+back, and an empty one fails =read=, producing a "Failed to read the projects
+list file due to unexpected EOF" warning.
 
 * Modal navigation (=my-nav-mode=)
 A transient vi-style layer for the times when reading and moving dominate
