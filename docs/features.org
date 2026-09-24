@@ -213,8 +213,15 @@ and merge the two lists, the record is switched off:
 
 : (advice-add 'project-remember-project :override #'ignore)
 
-=project-list-file= is left at its default (=~/.emacs.d/projects=); nothing
-writes it any more, so the file stays absent and does not need gitignoring.
+=project-list-file= is left at its default (=~/.emacs.d/projects=) and the
+file is gitignored, because the override does *not* stop it from being
+written. =project-switch-project= -- the command behind =C-x p p=, the one
+path this config actually uses -- calls =project--remember-dir= directly
+rather than going through =project-remember-project=, so the advice never
+fires and the file reappears holding whatever was switched to last. Its
+contents are inert: the prompt is built from =ghq list= and nothing reads
+the list back. Re-pointing the advice at =project--remember-dir= would make
+the file genuinely stay absent; ignoring it was the cheaper choice.
 Pointing it at =null-device= instead was rejected: project.el reads the file
 back, and an empty one fails =read=, producing a "Failed to read the projects
 list file due to unexpected EOF" warning.
