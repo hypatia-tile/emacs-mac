@@ -13,6 +13,10 @@ backup
 # saved bookmarks (personal, machine-specific file locations)
 /bookmarks
 
+# project.el's project list (machine-specific paths; the prompt comes from
+# ghq list, so nothing here is read back)
+/projects
+
 # -*- mode: gitignore; -*-
 *~
 \#*\#
