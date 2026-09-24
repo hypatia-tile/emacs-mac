@@ -21,6 +21,8 @@ companion to the inline comments in =init.el= and the operational notes in
 | Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
 | LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =M-,= back, =M-?= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
+| Formatting        | apheleia + Biome (JS/TS) / LSP      | =C-c f= format now; automatic on save  |
+|                   |                                     | in ts / tsx / js / json / css buffers  |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
@@ -74,6 +76,57 @@ the global =completion-at-point-functions=. These show up in ordinary buffers;
 in eglot (LSP) buffers eglot installs its own buffer-local capf, so LSP
 completion stays primary there (merging buffer words into LSP buffers with
 =cape-capf-super= is deferred).
+
+* Formatting (=C-c f=, Biome via apheleia)
+The Next.js projects run [[https://biomejs.dev/][Biome]] as their formatter and linter: =@biomejs/biome=
+in =devDependencies=, =biome.json= at the repository root. Emacs has to use
+that same Biome, because the alternative -- =eglot-format-buffer=, which asks
+the language server -- means tsserver's own formatter in a TypeScript buffer,
+and that one formats by its built-in defaults and never reads =biome.json=.
+Two formatters with different opinions on the same file is a diff on every
+save, so only one of them can win.
+
+=apheleia= runs the formatter in a subprocess and applies the result as a
+diff, so point, the mark and the scroll position survive a save. Its built-in
+=biome= recipe is:
+
+: biome check --write --linter-enabled=false --stdin-file-path FILE
+
+=check= with the linter switched off means format plus the =assist= actions
+(=organizeImports= in these projects), and no lint fixes -- linting stays a
+separate concern.
+
+** Finding the project's Biome
+The recipe does not call =biome= directly; it goes through =apheleia-npx=, a
+script bundled with apheleia that walks up to =package.json= and prefers the
+project's own =node_modules/.bin/biome=. That indirection is needed here: the
+flake dev shell provides =node= and =pnpm=, not the project's binaries, so
+=biome= is never on PATH. In a project without Biome installed the script
+exits 100, which apheleia reads as "formatter not available" and leaves the
+buffer alone. Biome also leaves a file untouched when it cannot parse it, so
+a buffer mid-edit is never mangled.
+
+** Which buffers
+=apheleia-mode= is hooked into =typescript-ts-mode=, =tsx-ts-mode=, =js-mode=,
+=js-json-mode= and =css-mode= -- not switched on with =apheleia-global-mode=.
+The global mode would also pick up apheleia's defaults for =rust-ts-mode=
+(rustfmt), =c-mode= (clang-format) and =emacs-lisp-mode= (lisp-indent), and
+format-on-save for those was never asked for. Add a hook when a language
+actually needs one.
+
+=js-json-mode= is named separately from =js-mode= because it is not a
+derivative of it (its only parent is =prog-mode=). =.js= opens in
+=javascript-mode=, an alias for =js-mode=, so that is covered; =.mjs= has no
+=auto-mode-alist= entry at all in Emacs 30, so a =next.config.mjs= will need
+one added.
+
+** =C-c f= in a TypeScript buffer
+=C-c f= is bound in =eglot-mode-map=, and a minor mode map wins over any major
+mode map, so the key cannot simply be rebound per language. It now runs
+=my-format-buffer=, which dispatches: apheleia where =apheleia-mode= is on (so
+the key and the save hook run the same formatter), =eglot-format-buffer=
+everywhere else -- Rust, LaTeX, C. =C-u C-c f= still reaches apheleia's
+formatter prompt.
 
 * Project switching (=C-x p p=, ghq)
 Repositories are cloned with =ghq=, which owns the layout under =ghq root=
