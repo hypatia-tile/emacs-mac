@@ -222,16 +222,17 @@
 ;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
 ;; do the rest: eldoc (hover), flymake (diagnostics, see below), xref (M-. ;
 ;; go-back on C-c ,), completion-at-point (shown by corfu). Rename:
-;; M-x eglot-rename. Format the buffer with C-c f (eglot-format-buffer), which
-;; drives the server's formatter (e.g. rust-analyzer -> rustfmt); M-x
-;; eglot-format handles a region. The key lives in eglot-mode-map, so it is
-;; active only in LSP-managed buffers.
+;; M-x eglot-rename. Format the buffer with C-c f, which drives the server's
+;; formatter (e.g. rust-analyzer -> rustfmt) unless apheleia is running in the
+;; buffer -- see `my-format-buffer' below; M-x eglot-format handles a region.
+;; The key lives in eglot-mode-map, so it is active only in LSP-managed
+;; buffers.
 (use-package eglot
   :ensure nil
   :hook ((c-mode c++-mode rust-ts-mode typescript-ts-mode tsx-ts-mode LaTeX-mode)
          . eglot-ensure)
   :bind (:map eglot-mode-map
-              ("C-c f" . eglot-format-buffer))
+              ("C-c f" . my-format-buffer))
   :config
   ;; eglot's built-in tex entry offers a choice between digestif and texlab and
   ;; picks digestif -- which has no formatting -- when both are present (the TeX
@@ -290,6 +291,62 @@
     (when (and (memq window-system '(mac ns x))
                (not (treesit-language-available-p (car src))))
       (treesit-install-language-grammar (car src)))))
+
+;; Apheleia: run a code formatter on save, asynchronously. The Next.js projects
+;; use Biome (@biomejs/biome in devDependencies, biome.json at the root) as
+;; their formatter and linter, so the formatter here has to be Biome and not
+;; tsserver's built-in one -- tsserver formats by its own defaults and never
+;; reads biome.json, so the two disagree on every save.
+;;
+;; Apheleia's `biome' recipe runs
+;;   biome check --write --linter-enabled=false --stdin-file-path FILE
+;; so it formats and applies the `assist' actions (organizeImports) while
+;; leaving lint alone. It invokes Biome through the bundled `apheleia-npx'
+;; script, which walks up to package.json and prefers the project's own
+;; node_modules/.bin/biome -- the flake dev shell only provides node and pnpm,
+;; not the project binaries, so PATH alone would not find it. In a project
+;; without Biome installed that script exits 100, which apheleia reads as
+;; "formatter not available" and leaves the buffer untouched.
+;;
+;; The formatter runs in a subprocess and its output is applied to the buffer
+;; as a diff, so point, the mark and the scroll position survive the save.
+;;
+;; Enabled per mode rather than through `apheleia-global-mode': the default
+;; `apheleia-mode-alist' also maps rust-ts-mode -> rustfmt, c-mode ->
+;; clang-format and emacs-lisp-mode -> lisp-indent, and format-on-save for
+;; those was never asked for. The modes listed are the ones a Next.js project
+;; actually opens; the tree-sitter variants (js-ts-mode, json-ts-mode,
+;; css-ts-mode) are left out because no grammar for them is installed.
+;; js-json-mode is listed separately because it is not a js-mode derivative --
+;; its only parent is prog-mode -- so neither the hook nor the alist entry for
+;; js-mode reaches a .json buffer. (.js opens in `javascript-mode', an alias
+;; for js-mode, so that one is covered. .mjs has no auto-mode-alist entry at
+;; all in Emacs 30; add one when a next.config.mjs first shows up.)
+(use-package apheleia
+  :ensure t
+  :hook ((typescript-ts-mode tsx-ts-mode js-mode js-json-mode css-mode)
+         . apheleia-mode)
+  :config
+  (dolist (mode '(typescript-ts-mode tsx-ts-mode js-mode js-json-mode css-mode))
+    (setf (alist-get mode apheleia-mode-alist) 'biome)))
+
+;; C-c f is bound in eglot-mode-map (above) to format through the language
+;; server. In a TypeScript buffer that means tsserver's formatter, which is
+;; exactly the one Biome has to replace. Dispatch instead: where apheleia is
+;; on, the key runs the same formatter the save hook runs; elsewhere (Rust,
+;; LaTeX, C) it keeps driving the server. The dispatch has to sit on that one
+;; binding, because eglot-mode-map is a minor mode map and so takes precedence
+;; over anything a major mode map could bind.
+(defun my-format-buffer ()
+  "Format the current buffer with apheleia, or with the LSP server.
+Use apheleia when `apheleia-mode' is on in this buffer, so that the
+manual command and the on-save path run the same formatter.  Fall back
+to `eglot-format-buffer' otherwise.  A prefix argument is passed
+through, so C-u C-c f still prompts apheleia for a formatter."
+  (interactive)
+  (if (bound-and-true-p apheleia-mode)
+      (call-interactively #'apheleia-format-buffer)
+    (call-interactively #'eglot-format-buffer)))
 
 ;; Flymake diagnostics navigation. Modern flymake ships no default keys and
 ;; next-error (M-g n / M-g p) is not wired to flymake here, so bind the flymake
