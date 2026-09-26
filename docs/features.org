@@ -69,6 +69,24 @@ Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 under the classic =C-c != prefix: =C-c ! n= next, =C-c ! p= previous, =C-c ! l=
 list buffer diagnostics.
 
+On Emacs 31 every flymake backend sits behind =trusted-content=, and an
+undeclared buffer does not get a skipped backend but a *disabled* one:
+=Disabling eglot-flymake-backend in FILE (untrusted content)=, =Flymake:!= in
+the mode line, and no diagnostics whatsoever -- type errors included (issue
+#3). =init.el= puts =flymake-always-safe= on =eglot-flymake-backend= instead of
+declaring trees in =trusted-content=: eglot's backend evaluates nothing, and
+eglot has already started the language server on the file without consulting
+=trusted-content=, whereas a declared tree would also let
+=elisp-flymake-byte-compile= expand macros in every third-party clone under ghq
+root. Emacs 30's flymake has no such gate, so the property is inert here.
+
+Worth remembering when this is next debugged: a backend that signals goes on
+the buffer's disabled list and is *not retried*. Setting the property in a
+session where it has already failed changes nothing until =flymake-mode= is
+toggled or =flymake-start= is called with a prefix argument. The =!= in the
+mode line is clickable and leads to =flymake-switch-to-log-buffer=, which keeps
+the reason a backend was disabled.
+
 Buffer-word completion: the built-in =dabbrev= (=M-/=) completes the word at
 point from buffer contents. To also get buffer words in the corfu popup,
 =cape= registers =cape-dabbrev= (buffer words) and =cape-file= (file paths) on

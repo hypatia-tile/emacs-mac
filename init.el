@@ -362,6 +362,30 @@ through, so C-u C-c f still prompts apheleia for a formatter."
               ("C-c ! p" . flymake-goto-prev-error)
               ("C-c ! l" . flymake-show-buffer-diagnostics)))
 
+;; Emacs 31 puts every flymake backend behind `trusted-content'. In a buffer
+;; that is not declared trusted the backend is not merely skipped but
+;; disabled -- "Disabling eglot-flymake-backend in FILE (untrusted content)",
+;; and `Flymake:!' in the mode line -- so a TypeScript buffer gets no
+;; diagnostics at all, type errors included.
+;;
+;; The gate is there for backends that *evaluate* the buffer:
+;; `elisp-flymake-byte-compile' expands macros as it compiles. eglot's backend
+;; does not evaluate anything; it hands over what the language server has
+;; already produced, and eglot starts that server on the file without
+;; consulting `trusted-content' at all. So the trust was already extended when
+;; the server connected, and this override only stops flymake from refusing to
+;; display the result. Declaring whole trees in `trusted-content' instead would
+;; also let the elisp backend evaluate code in every third-party clone under
+;; ghq root, which is a different and much larger promise.
+;;
+;; It matters that this runs before the backend ever does, as it does here: a
+;; backend that signals goes on the buffer's disabled list and is not retried,
+;; so setting the property in a session where it has already failed changes
+;; nothing until `flymake-mode' is toggled or `flymake-start' runs with FORCE.
+;;
+;; Inert on Emacs 30, whose flymake reads no such property.
+(function-put 'eglot-flymake-backend 'flymake-always-safe t)
+
 ;; AUCTeX: a full LaTeX editing environment (LaTeX-mode, compilation, math
 ;; input, folding). The package exposes no `auctex' feature to require, so the
 ;; use-package is named after a real feature it ships (`tex') while
