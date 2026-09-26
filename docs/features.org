@@ -69,16 +69,27 @@ Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 under the classic =C-c != prefix: =C-c ! n= next, =C-c ! p= previous, =C-c ! l=
 list buffer diagnostics.
 
-On Emacs 31 every flymake backend sits behind =trusted-content=, and an
-undeclared buffer does not get a skipped backend but a *disabled* one:
+A *nixpkgs-built* Emacs puts every flymake backend behind =trusted-content=,
+and an undeclared buffer does not get a skipped backend but a *disabled* one:
 =Disabling eglot-flymake-backend in FILE (untrusted content)=, =Flymake:!= in
 the mode line, and no diagnostics whatsoever -- type errors included (issue
-#3). =init.el= puts =flymake-always-safe= on =eglot-flymake-backend= instead of
+#3).
+
+This follows the packaging, not the version. Upstream Emacs gates only
+=elisp-flymake-byte-compile=, the one backend that evaluates what it checks;
+=flymake.el= upstream has no such check and =flymake-always-safe= exists
+nowhere in the upstream tree. Both come from nixpkgs' =CVE-2024-53920.patch=,
+which rewrites =flymake--run-backend= to gate every backend -- verified against
+the Emacs 31.1 source nixpkgs builds from. The Emacs here, from Homebrew, never
+reads the property, so the line in =init.el= is inert on this machine; it is
+set for the NixOS machine that shares this configuration.
+
+=init.el= puts =flymake-always-safe= on =eglot-flymake-backend= rather than
 declaring trees in =trusted-content=: eglot's backend evaluates nothing, and
 eglot has already started the language server on the file without consulting
 =trusted-content=, whereas a declared tree would also let
 =elisp-flymake-byte-compile= expand macros in every third-party clone under ghq
-root. Emacs 30's flymake has no such gate, so the property is inert here.
+root.
 
 Worth remembering when this is next debugged: a backend that signals goes on
 the buffer's disabled list and is *not retried*. Setting the property in a

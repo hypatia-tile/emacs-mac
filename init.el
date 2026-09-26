@@ -362,16 +362,24 @@ through, so C-u C-c f still prompts apheleia for a formatter."
               ("C-c ! p" . flymake-goto-prev-error)
               ("C-c ! l" . flymake-show-buffer-diagnostics)))
 
-;; Emacs 31 puts every flymake backend behind `trusted-content'. In a buffer
-;; that is not declared trusted the backend is not merely skipped but
-;; disabled -- "Disabling eglot-flymake-backend in FILE (untrusted content)",
-;; and `Flymake:!' in the mode line -- so a TypeScript buffer gets no
-;; diagnostics at all, type errors included.
+;; A nixpkgs-built Emacs puts every flymake backend behind `trusted-content'.
+;; In a buffer that is not declared trusted the backend is not merely skipped
+;; but disabled -- "Disabling eglot-flymake-backend in FILE (untrusted
+;; content)", and `Flymake:!' in the mode line -- so a TypeScript buffer gets
+;; no diagnostics at all, type errors included.
 ;;
-;; The gate is there for backends that *evaluate* the buffer:
-;; `elisp-flymake-byte-compile' expands macros as it compiles. eglot's backend
-;; does not evaluate anything; it hands over what the language server has
-;; already produced, and eglot starts that server on the file without
+;; This is packaging, not a version. Upstream Emacs gates only the one backend
+;; that *evaluates* what it checks, `elisp-flymake-byte-compile', whose byte
+;; compilation expands macros; its own `flymake.el' has no such check, and
+;; `flymake-always-safe' exists nowhere in the upstream tree. Both come from
+;; nixpkgs' `CVE-2024-53920.patch', which rewrites `flymake--run-backend' to
+;; gate every backend. Verified against the Emacs 31.1 source nixpkgs builds
+;; from: neither name appears in it. So the Emacs on this machine, from
+;; Homebrew, does not read this property at all -- the line is inert here, and
+;; is set for the NixOS machine sharing this configuration.
+;;
+;; eglot's backend evaluates nothing; it hands over what the language server
+;; has already produced, and eglot starts that server on the file without
 ;; consulting `trusted-content' at all. So the trust was already extended when
 ;; the server connected, and this override only stops flymake from refusing to
 ;; display the result. Declaring whole trees in `trusted-content' instead would
@@ -382,8 +390,6 @@ through, so C-u C-c f still prompts apheleia for a formatter."
 ;; backend that signals goes on the buffer's disabled list and is not retried,
 ;; so setting the property in a session where it has already failed changes
 ;; nothing until `flymake-mode' is toggled or `flymake-start' runs with FORCE.
-;;
-;; Inert on Emacs 30, whose flymake reads no such property.
 (function-put 'eglot-flymake-backend 'flymake-always-safe t)
 
 ;; AUCTeX: a full LaTeX editing environment (LaTeX-mode, compilation, math
