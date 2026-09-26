@@ -1,3 +1,5 @@
+;;; init.el --- Emacs configuration -*- lexical-binding: t; -*-
+
 ;;; Package bootstrap
 
 ;; Since I'm in the learning stage, show all errors.
@@ -438,10 +440,10 @@ reporter\" notice, to stderr, so anything else means the run failed."
 
 (defun my-biome--sentinel (process _event)
   "Hand the finished PROCESS's Biome report to the flymake callback.
-The state travels on the process plist rather than in a closure: init.el
-is loaded without `lexical-binding', so a lambda written here would not
-capture anything, and a process sentinel runs long after the dynamic
-extent of the function that started it."
+The state travels on the process plist rather than in a closure, which
+keeps this a named top-level function -- inspectable and redefinable --
+and keeps the state reachable from the process object itself, which a
+sentinel running long after its starter's dynamic extent needs."
   (unless (process-live-p process)
     (let ((source (process-get process 'my-biome-source))
           (stdout (process-get process 'my-biome-stdout))
@@ -671,9 +673,8 @@ which is why only \" and ( get an \"around\" binding."
       (goto-char end)
       (activate-mark))))
 
-;; Named commands rather than generated closures: `init.el' has no
-;; `lexical-binding' cookie, and named commands are what which-key and
-;; `describe-key' display.
+;; Named commands rather than generated closures: named commands are what
+;; which-key and `describe-key' display.
 (defun my-nav-mark-inner-word ()      "Select the word at point."          (interactive) (my-nav--mark 'word t))
 (defun my-nav-mark-inner-symbol ()    "Select the symbol at point."        (interactive) (my-nav--mark 'symbol t))
 (defun my-nav-mark-inner-string ()    "Select a string without its quotes." (interactive) (my-nav--mark 'string t))

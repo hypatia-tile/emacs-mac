@@ -173,10 +173,12 @@ and re-saved it.
 - The report goes to stdout and every notice (including "the json reporter is
   experimental") to stderr, so the process is given a separate =:stderr=
   buffer. Merging them would corrupt the JSON.
-- The sentinel carries its state on the process plist, not in a closure:
-  =init.el= is loaded *without* =lexical-binding=, so a lambda written there
-  captures nothing, and a sentinel runs long after the dynamic extent of the
-  function that started it. This bit the first version of the backend.
+- The sentinel carries its state on the process plist, not in a closure, so
+  it stays a named top-level function and the state is reachable from the
+  process object itself -- a sentinel runs long after the dynamic extent of
+  the function that started it. The first version used a closure and broke:
+  =init.el= had no =lexical-binding= cookie then, so it captured nothing.
+  The cookie is there now, but the plist stayed.
 - =biome= is looked up as =node_modules/.bin/biome= from the nearest directory
   with a =node_modules=; the flake dev shell provides node and pnpm, not the
   project's binaries. A project without Biome gets no backend and no flymake
