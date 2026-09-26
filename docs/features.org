@@ -23,7 +23,6 @@ companion to the inline comments in =init.el= and the operational notes in
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 | Formatting        | apheleia + Biome (JS/TS) / LSP      | =C-c f= format now; automatic on save  |
 |                   |                                     | in ts / tsx / js / json / css buffers  |
-| Lint (JS / TS)    | flymake + Biome CLI (hand-written)  | =C-c ! n= / =C-c ! p= / =C-c ! l=      |
 | Theme             | tokyo-night                         | -                                      |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
@@ -95,7 +94,9 @@ diff, so point, the mark and the scroll position survive a save. Its built-in
 
 =check= with the linter switched off means format plus the =assist= actions
 (=organizeImports= in these projects), and no lint fixes -- linting stays a
-separate concern.
+separate concern, and one Emacs deliberately stays out of: =pnpm biome lint=
+on the command line is enough for it. Flymake here carries the language
+server's diagnostics only.
 
 ** Finding the project's Biome
 The recipe does not call =biome= directly; it goes through =apheleia-npx=, a
@@ -128,65 +129,6 @@ mode map, so the key cannot simply be rebound per language. It now runs
 the key and the save hook run the same formatter), =eglot-format-buffer=
 everywhere else -- Rust, LaTeX, C. =C-u C-c f= still reaches apheleia's
 formatter prompt.
-
-* Biome lint in flymake (=C-c ! n=)
-Biome's lint findings show up next to tsserver's type errors, in the same
-flymake list, under the same keys. The backend is hand-written
-(=my-biome-flymake= in =init.el=); it shells out to the project's Biome with
-=--reporter=json= and turns each diagnostic into a =flymake-make-diagnostic=.
-
-** Why not Biome's LSP
-eglot runs *one server per buffer*. =eglot-alternatives= picks one program out
-of several candidates; it does not start them side by side. That slot belongs
-to =typescript-language-server=, which is the one that knows the types, so
-=biome lsp-proxy= has nowhere to go. Flymake has no such limit -- it merges
-any number of backends and keeps each one's diagnostics separate -- so Biome
-enters as a flymake backend instead of as a second language server.
-
-** Why the file on disk, and not the buffer text
-Biome reports *no lint diagnostics at all* in stdin mode. With
-=--stdin-file-path= the lint command turns into a fix operation: it prints the
-(unchanged) source on stdout and nothing but "The contents aren't fixed" on
-stderr, whatever =--reporter= says. Verified against Biome 2.5.14.
-
-Linting a copy in a temp directory does not work either. Biome enables its
-rule *domains* (=next=, =react=) from the nearest =package.json=, so a file
-outside the project quietly loses the Next.js rules -- an =<img>= element that
-=biome lint= flags as =performance/noImgElement= in place produces zero
-diagnostics from =/tmp=, even with =--config-path= aimed at the project. A
-copy placed *next to* the real file would keep the domains, but it would also
-appear and vanish in the directory =next dev= watches, on every check.
-
-So the contract is: *Biome reports on the file as last saved.* While the
-buffer is modified the backend reports nothing, which clears its own
-diagnostics and leaves eglot's alone, rather than pointing at lines that have
-since moved. The check is re-run from =apheleia-post-format-hook= as well as
-on save, so the findings line up with the file after apheleia has reformatted
-and re-saved it.
-
-** Details worth remembering
-- Biome's JSON gives 1-based lines and 1-based *character* columns, with the
-  end of a range exclusive -- which is exactly what flymake wants, so the
-  conversion is a =forward-line= plus a =forward-char=.
-- =severity= is =error= / =warning=; anything else maps to =:note=.
-- =--max-diagnostics= defaults to 20. The backend passes =none=.
-- The report goes to stdout and every notice (including "the json reporter is
-  experimental") to stderr, so the process is given a separate =:stderr=
-  buffer. Merging them would corrupt the JSON.
-- The sentinel carries its state on the process plist, not in a closure, so
-  it stays a named top-level function and the state is reachable from the
-  process object itself -- a sentinel runs long after the dynamic extent of
-  the function that started it. The first version used a closure and broke:
-  =init.el= had no =lexical-binding= cookie then, so it captured nothing.
-  The cookie is there now, but the plist stayed.
-- =biome= is looked up as =node_modules/.bin/biome= from the nearest directory
-  with a =node_modules=; the flake dev shell provides node and pnpm, not the
-  project's binaries. A project without Biome gets no backend and no flymake
-  indicator; it is picked up the next time a file there is visited after
-  =pnpm install=.
-
-TypeScript and JavaScript only. Biome lints JSON and CSS too, but there its
-rules are thin next to what the formatter already fixes on save.
 
 * Project switching (=C-x p p=, ghq)
 Repositories are cloned with =ghq=, which owns the layout under =ghq root=
