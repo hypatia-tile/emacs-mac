@@ -436,11 +436,20 @@ through, so C-u C-c f still prompts apheleia for a formatter."
   :config
   (load-theme 'tokyo-night :no-confirm))
 
-;; Background transparency: deferred. On macOS Tahoe (26) the built-in
-;; `alpha-background' is not rendered even under emacs-plus (setting it to 50
-;; still showed no transparency), so it is left out for now. To revisit, use
-;; the emacs-plus `window-blur' community patch (blur + configurable alpha) or
-;; the `emacs-liquid-glass' package (NSGlassEffectView, needs emacs-plus@31).
+;; Background transparency: nothing here, and nothing here will fix it. The
+;; built-in `alpha-background' is not rendered on this macOS -- tried on
+;; emacs-plus 30.2, emacs-mac 30.2.50 and the stock Cocoa build of 31.1, none
+;; of them render it. What works is a C patch, `frame-transparency' from the
+;; d12frosted/emacs-plus tap, which reaches the CGS APIs and adds the
+;; `ns-background-blur' and `ns-alpha-elements' frame parameters; confirmed
+;; rendering on 2026-09-27. It exists for Emacs 31 only, so the Emacs this
+;; config currently runs cannot have it.
+;;
+;; So transparency arrives with the Emacs, not from here. See
+;; docs/features.org and hypatia-tile/emacs-flake, which pins a patched
+;; 31.1. When the provider changes, the settings go in `default-frame-alist':
+;; `ns-background-blur' sets the NSWindow backing material at frame creation
+;; time, so a later `set-frame-parameter' is too late for the blur.
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)

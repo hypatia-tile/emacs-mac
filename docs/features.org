@@ -352,13 +352,43 @@ Prerequisite: a GUI Emacs on macOS starts with a minimal PATH and cannot see
   its LSP works, confirming vterm is a real PTY.
 - =vterm='s native module builds via cmake/libtool and is pre-compiled.
 
-* Background transparency (deferred)
-Matching kitty's =background_opacity 0.90= was attempted but dropped: on
-macOS Tahoe (26) the built-in =alpha-background= is not rendered even under
-emacs-plus (no transparency even at 50). The tokyo-night theme is kept. To
-revisit, use the emacs-plus =window-blur= community patch (blur + configurable
-alpha) or the =emacs-liquid-glass= package (needs emacs-plus@31). See the
-comment near the theme block in =init.el=.
+* Background transparency (solved, waiting on the Emacs provider)
+Matching kitty's =background_opacity 0.90= was attempted and dropped: the
+built-in =alpha-background= is not rendered on this macOS under emacs-plus, no
+transparency even at 50. The tokyo-night theme is kept.
+
+It is not a configuration problem, and no setting fixes it. Four Emacsen were
+tried and none rendered =alpha-background=: emacs-plus 30.2, emacs-mac
+30.2.50, and the Cocoa build of 31.1 as it comes.
+
+What works is a C patch. The =d12frosted/emacs-plus= tap carries a community
+patch, =frame-transparency= (maintainer =aaratha=), which adds transparency and
+background blur through the CGS APIs -- it makes =alpha-background= take effect
+and adds two frame parameters, =ns-background-blur= and =ns-alpha-elements=.
+Confirmed rendering on 2026-09-27.
+
+Two facts about it settle how it arrives here:
+
+- it exists for *Emacs 31 only*, so this config's current Emacs (emacs-plus@30)
+  cannot have it whatever is configured;
+- it patches the NS (Cocoa) port, so it applies to the standard upstream Emacs
+  31.1 -- nothing about it is tied to emacs-plus beyond the tap that hosts it.
+
+So transparency arrives with the Emacs, not with a setting here. The patched
+build lives in [[https://github.com/hypatia-tile/emacs-flake][hypatia-tile/emacs-flake]],
+which pins Emacs 31.1 with that patch and publishes it to a binary cache;
+=docs/investigation.md= there carries the measurements, including what the patch
+costs and why it is worth it. Until the provider changes, this section is the
+record and nothing in =init.el= is enabled.
+
+When it does change, the settings belong in =default-frame-alist= rather than in
+a =set-frame-parameter= call: =ns-background-blur= configures the NSWindow
+backing material at frame creation time, and setting it afterwards is too late
+for the blur to take.
+
+The =emacs-liquid-glass= package (NSGlassEffectView, needs emacs-plus@31)
+remains the other route, unexplored -- it would tie the config back to
+emacs-plus, which is the direction being left.
 
 * Helper scripts
 See =../scripts/=:
