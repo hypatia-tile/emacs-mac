@@ -436,20 +436,33 @@ through, so C-u C-c f still prompts apheleia for a formatter."
   :config
   (load-theme 'tokyo-night :no-confirm))
 
-;; Background transparency: nothing here, and nothing here will fix it. The
-;; built-in `alpha-background' is not rendered on this macOS -- tried on
-;; emacs-plus 30.2, emacs-mac 30.2.50 and the stock Cocoa build of 31.1, none
-;; of them render it. What works is a C patch, `frame-transparency' from the
-;; d12frosted/emacs-plus tap, which reaches the CGS APIs and adds the
-;; `ns-background-blur' and `ns-alpha-elements' frame parameters; confirmed
-;; rendering on 2026-09-27. It exists for Emacs 31 only, so the Emacs this
-;; config currently runs cannot have it.
+;; Background transparency. 0.70 here reads like kitty's `background_opacity
+;; 0.90' with the two windows side by side -- the numbers do not correspond, and
+;; setting 0.90 to match kitty's looked very nearly opaque. Calibrated by eye;
+;; what the two parameters multiply is evidently not the same quantity, and that
+;; was not chased further.
 ;;
-;; So transparency arrives with the Emacs, not from here. See
-;; docs/features.org and hypatia-tile/emacs-flake, which pins a patched
-;; 31.1. When the provider changes, the settings go in `default-frame-alist':
-;; `ns-background-blur' sets the NSWindow backing material at frame creation
-;; time, so a later `set-frame-parameter' is too late for the blur.
+;; The built-in `alpha-background' does nothing on this macOS on its own -- tried
+;; on emacs-plus 30.2, emacs-mac 30.2.50 and the stock Cocoa build of 31.1, none
+;; of which render it. What makes it render is a C patch reaching the CGS APIs,
+;; `frame-transparency' from the d12frosted/emacs-plus tap, carried by the Emacs
+;; this config now runs on (hypatia-tile/emacs-flake; dotfiles-mac ADR 0031). So
+;; these two lines are inert on an Emacs without that patch rather than wrong.
+;;
+;; Both parameters are needed. `ns-alpha-elements' is the patch's own, and it
+;; selects what the alpha applies to; with it unset nothing is transparent
+;; however low `alpha-background' goes. `ns-alpha-all' is every element -- the
+;; patch also offers `ns-alpha-default', `-fringe', `-box', `-stipple',
+;; `-relief' and `-glyphs' to pick from, which is where to start if the region
+;; or hl-line ends up reading badly through the window.
+;;
+;; `default-frame-alist' rather than `set-frame-parameter', so frames made later
+;; come up the same. No hook is needed: that is what the patch's README adds for
+;; its blur, which sets the NSWindow backing material at frame creation time and
+;; cannot be applied afterwards. Blur is deliberately left off -- transparency
+;; alone is what matches the terminal.
+(add-to-list 'default-frame-alist '(alpha-background . 0.70))
+(add-to-list 'default-frame-alist '(ns-alpha-elements ns-alpha-all))
 
 ;; Hide the Start Screen (Splash Screen)
 (setq inhibit-startup-screen t)

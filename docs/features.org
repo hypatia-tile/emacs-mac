@@ -24,6 +24,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Formatting        | apheleia + Biome (JS/TS) / LSP      | =C-c f= format now; automatic on save  |
 |                   |                                     | in ts / tsx / js / json / css buffers  |
 | Theme             | tokyo-night                         | -                                      |
+| Transparency      | frame-transparency patch (Emacs 31) | =alpha-background 0.70=                |
 | Shell PATH        | exec-path-from-shell                | -                                      |
 | Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
 | Terminal          | vterm                               | =C-c t=                                |
@@ -352,43 +353,50 @@ Prerequisite: a GUI Emacs on macOS starts with a minimal PATH and cannot see
   its LSP works, confirming vterm is a real PTY.
 - =vterm='s native module builds via cmake/libtool and is pre-compiled.
 
-* Background transparency (solved, waiting on the Emacs provider)
-Matching kitty's =background_opacity 0.90= was attempted and dropped: the
-built-in =alpha-background= is not rendered on this macOS under emacs-plus, no
-transparency even at 50. The tokyo-night theme is kept.
+* Background transparency (=alpha-background 0.70=)
+Calibrated against kitty, which runs =background_opacity 0.90=. The two numbers
+do **not** correspond: =alpha-background 0.90= looks very nearly opaque next to
+that terminal, and 0.70 is what reads as the same weight. Whatever the two
+parameters multiply is evidently not the same quantity; it was set by eye and
+not chased further.
 
-It is not a configuration problem, and no setting fixes it. Four Emacsen were
-tried and none rendered =alpha-background=: emacs-plus 30.2, emacs-mac
-30.2.50, and the Cocoa build of 31.1 as it comes.
+#+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(alpha-background . 0.70))
+(add-to-list 'default-frame-alist '(ns-alpha-elements ns-alpha-all))
+#+end_src
 
-What works is a C patch. The =d12frosted/emacs-plus= tap carries a community
-patch, =frame-transparency= (maintainer =aaratha=), which adds transparency and
-background blur through the CGS APIs -- it makes =alpha-background= take effect
-and adds two frame parameters, =ns-background-blur= and =ns-alpha-elements=.
-Confirmed rendering on 2026-09-27.
+** Why two parameters, and why it did not work before
+The built-in =alpha-background= does nothing on this macOS on its own. Four
+Emacsen were tried and none rendered it: emacs-plus 30.2, emacs-mac 30.2.50, and
+the stock Cocoa build of 31.1. It is not a configuration problem and no setting
+here fixes it.
 
-Two facts about it settle how it arrives here:
+What makes it render is a C patch reaching the CGS APIs -- =frame-transparency=
+from the =d12frosted/emacs-plus= tap (maintainer =aaratha=). It exists for Emacs
+31 only and patches the NS port, so it applies to the standard upstream Emacs,
+and it is carried by the Emacs this configuration now runs on:
+[[https://github.com/hypatia-tile/emacs-flake][hypatia-tile/emacs-flake]], adopted
+in dotfiles-mac ADR 0031. Confirmed rendering 2026-09-27.
 
-- it exists for *Emacs 31 only*, so this config's current Emacs (emacs-plus@30)
-  cannot have it whatever is configured;
-- it patches the NS (Cocoa) port, so it applies to the standard upstream Emacs
-  31.1 -- nothing about it is tied to emacs-plus beyond the tap that hosts it.
+=ns-alpha-elements= is that patch's own parameter and selects what the alpha
+applies to. **With it unset nothing is transparent**, however low
+=alpha-background= goes, which is the trap if only the familiar parameter is set.
+=ns-alpha-all= is every element; the patch also offers =ns-alpha-default=,
+=-fringe=, =-box=, =-stipple=, =-relief= and =-glyphs= to choose from, which is
+where to start if the region or =hl-line= reads badly through the window.
 
-So transparency arrives with the Emacs, not with a setting here. The patched
-build lives in [[https://github.com/hypatia-tile/emacs-flake][hypatia-tile/emacs-flake]],
-which pins Emacs 31.1 with that patch and publishes it to a binary cache;
-=docs/investigation.md= there carries the measurements, including what the patch
-costs and why it is worth it. Until the provider changes, this section is the
-record and nothing in =init.el= is enabled.
+Both lines are inert on an Emacs without the patch rather than wrong, so the
+configuration stays portable.
 
-When it does change, the settings belong in =default-frame-alist= rather than in
-a =set-frame-parameter= call: =ns-background-blur= configures the NSWindow
-backing material at frame creation time, and setting it afterwards is too late
-for the blur to take.
+** Why =default-frame-alist=, and no blur
+=default-frame-alist= rather than =set-frame-parameter=, so a frame made later
+comes up the same. No hook is needed here; the patch's own README adds one for
+its =ns-background-blur=, which configures the NSWindow backing material at frame
+creation time and therefore cannot be applied to a frame afterwards. This Emacs
+is not a daemon either, so there is no second frame-creation path to cover.
 
-The =emacs-liquid-glass= package (NSGlassEffectView, needs emacs-plus@31)
-remains the other route, unexplored -- it would tie the config back to
-emacs-plus, which is the direction being left.
+Blur is deliberately left off. Transparency alone is what matches the terminal,
+and =ns-background-blur= is available if that judgement changes.
 
 * Helper scripts
 See =../scripts/=:
