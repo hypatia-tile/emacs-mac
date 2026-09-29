@@ -76,6 +76,10 @@
   ("C-c c" . org-capture)
   :custom
   (org-agenda-files '("~/org-notes/todo.org") "Tentative agenda file I am currently using.")
+  ;; With no `org-capture-templates', `C-c c t' uses Org's built-in Task
+  ;; template, whose target file is this one. The inbox is an unsorted
+  ;; drop zone, so it stays out of `org-agenda-files' until refiled.
+  (org-default-notes-file "~/org-notes/inbox.org" "Where `C-c c' drops captures until I need real templates.")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
