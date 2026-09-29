@@ -75,7 +75,7 @@
   ("C-c a" . org-agenda)
   ("C-c c" . org-capture)
   :custom
-  (org-agenda-files '("~/org-notes-proto/todo.org" "~/org-notes-proto/now.org") "Tentative agenda file I am currently using.")
+  (org-agenda-files '("~/org-notes/todo.org") "Tentative agenda file I am currently using.")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
@@ -176,7 +176,7 @@
 ;; projects is switched off (see below), so the repos ghq does not manage are
 ;; named here instead.
 (defconst my-project-extra-roots
-  '("~/.emacs.d/" "~/org-notes-proto/")
+  '("~/.emacs.d/" "~/org-notes/")
   "Projects offered at `C-x p p' that ghq does not manage.")
 
 (defun my-ghq-prompt-project-dir ()

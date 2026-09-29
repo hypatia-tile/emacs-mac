@@ -174,7 +174,7 @@ and =C-x p f=, =M-s r= (consult-ripgrep) and the rest of the =C-x p= map then
 act on the chosen project.
 
 Repositories =ghq= does not manage are named explicitly in
-=my-project-extra-roots= (currently =~/.emacs.d/= and =~/org-notes-proto/=);
+=my-project-extra-roots= (currently =~/.emacs.d/= and =~/org-notes/=);
 add a line when a new one starts to matter.
 
 ** Why no state on disk
