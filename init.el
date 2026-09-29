@@ -76,10 +76,19 @@
   ("C-c c" . org-capture)
   :custom
   (org-agenda-files '("~/org-notes/todo.org") "Tentative agenda file I am currently using.")
-  ;; With no `org-capture-templates', `C-c c t' uses Org's built-in Task
-  ;; template, whose target file is this one. The inbox is an unsorted
-  ;; drop zone, so it stays out of `org-agenda-files' until refiled.
-  (org-default-notes-file "~/org-notes/inbox.org" "Where `C-c c' drops captures until I need real templates.")
+  ;; The inbox is an unsorted drop zone for everything captured, so it stays
+  ;; out of `org-agenda-files'; items reach the agenda only once refiled
+  ;; (C-c C-w) into todo.org.
+  (org-default-notes-file "~/org-notes/inbox.org" "Target of the capture templates' (file \"\") and (file+headline \"\" ...).")
+  ;; Keys follow `C-c c'. Defining any template replaces Org's built-in
+  ;; fallback, so "t" is that fallback written out again, kept by hand.
+  ;;   i  a bare note appended at the top level, stamped with date and time
+  ;;   t  a TODO under the "Tasks" heading, stamped with the date and
+  ;;      linked (%a) to wherever capture was invoked from
+  (org-capture-templates
+   '(("i" "Inbox" entry (file "") "* %?\n%U\n")
+     ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%u\n%a"))
+   "Capture into the inbox: raw notes (i) and tasks (t).")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
