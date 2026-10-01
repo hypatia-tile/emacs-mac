@@ -85,10 +85,17 @@
   ;;   i  a bare note appended at the top level, stamped with date and time
   ;;   t  a TODO under the "Tasks" heading, stamped with the date and
   ;;      linked (%a) to wherever capture was invoked from
+  ;;   j  a stream-of-thought entry (rants, ideas, ideals, leanings) in
+  ;;      journal.org under a date tree, headed by the time. Unlike the
+  ;;      inbox it is never refiled: it is a record to trace back through
+  ;;      later. The tag prompt (%^g) completes from the file's #+TAGS
+  ;;      line and can be skipped with RET.
   (org-capture-templates
    '(("i" "Inbox" entry (file "") "* %?\n%U\n")
-     ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%u\n%a"))
-   "Capture into the inbox: raw notes (i) and tasks (t).")
+     ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%u\n%a")
+     ("j" "Journal" entry (file+olp+datetree "~/org-notes/journal.org")
+      "* %<%H:%M> %^g\n%?"))
+   "Capture raw notes (i) and tasks (t) into the inbox, thoughts (j) into the journal.")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
