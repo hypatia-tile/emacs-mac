@@ -79,6 +79,9 @@
   ;; The inbox is an unsorted drop zone for everything captured, so it stays
   ;; out of `org-agenda-files'; items reach the agenda only once refiled
   ;; (C-c C-w) into todo.org.
+  (org-refile-targets '((org-agenda-files :maxlevel . 1)))
+  (org-refile-use-outline-path 'file)
+  (org-outline-path-complete-in-steps nil)
   (org-default-notes-file "~/org-notes/inbox.org" "Target of the capture templates' (file \"\") and (file+headline \"\" ...).")
   ;; Keys follow `C-c c'. Defining any template replaces Org's built-in
   ;; fallback, so "t" is that fallback written out again, kept by hand.
