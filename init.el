@@ -93,12 +93,17 @@
   ;;      inbox it is never refiled: it is a record to trace back through
   ;;      later. The tag prompt (%^g) completes from the file's #+TAGS
   ;;      line and can be skipped with RET.
+  ;;   p  a bare note, stamped like "i", appended to the current project's
+  ;;      .local.org (see `my-project-local-note-file'). The target is a
+  ;;      function, so it is resolved on every capture and errors out
+  ;;      outside a project instead of writing somewhere under $HOME.
   (org-capture-templates
    '(("i" "Inbox" entry (file "") "* %?\n%U\n")
      ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%u\n%a")
      ("j" "Journal" entry (file+olp+datetree "~/org-notes/journal.org")
-      "* %<%H:%M> %^g\n%?"))
-   "Capture raw notes (i) and tasks (t) into the inbox, thoughts (j) into the journal.")
+      "* %<%H:%M> %^g\n%?")
+     ("p" "Project note" entry (file my-project-local-note-file) "* %?\n%U\n"))
+   "Capture raw notes (i) and tasks (t) into the inbox, thoughts (j) into the journal, project notes (p) into .local.org.")
   (org-startup-indented t)
   (org-log-done 'time)
   (org-startup-folded t)
@@ -210,8 +215,25 @@
                          (process-lines "ghq" "list"))))
     (completing-read "Project: " (append clones my-project-extra-roots) nil t)))
 
+;; Project-local notes: each project keeps its own Org notes in .local.org at
+;; its root (attachments and split files, if any, under .local-note/). Both
+;; paths are ignored by the global git ignore that dotfiles-mac manages, so
+;; they never enter a clone. `C-x p n' visits the file and `C-c c p' captures
+;; into it; outside a project both stop with an error.
+(defun my-project-local-note-file ()
+  "Return the current project's .local.org, or signal outside a project."
+  (if-let* ((project (project-current)))
+      (expand-file-name ".local.org" (project-root project))
+    (user-error "Not in a project: no .local.org to use")))
+
+(defun my-project-open-local-note ()
+  "Visit the current project's .local.org; a new file is written on save."
+  (interactive)
+  (find-file (my-project-local-note-file)))
+
 (use-package project
   :ensure nil
+  :bind (:map project-prefix-map ("n" . my-project-open-local-note))
   :custom (project-prompter #'my-ghq-prompt-project-dir)
   :config
   ;; project.el otherwise appends every project visited to `project-list-file'.

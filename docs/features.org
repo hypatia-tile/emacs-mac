@@ -17,7 +17,10 @@ companion to the inline comments in =init.el= and the operational notes in
 | In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
 | Key discovery     | which-key (built-in)                | (automatic popup)                      |
 | Git               | magit                               | =C-x g= status                         |
-| Project switching | project (built-in) + ghq            | =C-x p p= switch, =C-x p f= find-file  |
+| Org               | org (built-in)                      | =C-c c= capture (=i= / =t= / =j= / =p=), |
+|                   |                                     | =C-c a= agenda, =C-c l= store link     |
+| Project switching | project (built-in) + ghq            | =C-x p p= switch, =C-x p f= find-file, |
+|                   |                                     | =C-x p n= project-local note           |
 | Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
 | LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =M-,= back, =M-?= refs, |
 |                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
@@ -199,6 +202,26 @@ the file genuinely stay absent; ignoring it was the cheaper choice.
 Pointing it at =null-device= instead was rejected: project.el reads the file
 back, and an empty one fails =read=, producing a "Failed to read the projects
 list file due to unexpected EOF" warning.
+
+** Project-local notes (=C-x p n=, =C-c c p=)
+Notes that belong to one repository but not in its history live at the
+project root as =.local.org=, with an optional =.local-note/= directory for
+attachments and split files. Both paths are ignored by the global git ignore
+in dotfiles-mac (=config/git/ignore=), so they never enter a clone; this
+config only reads and writes them.
+
+- =C-x p n= (=my-project-open-local-note=) visits =<root>/.local.org=. A
+  missing file opens as an empty buffer and is written on the first save --
+  merely looking does not leave a file behind.
+- =C-c c p= appends a bare entry stamped with date and time, the same shape as
+  the inbox template =i=.
+
+Both resolve the file through =my-project-local-note-file=, which calls
+=project-current= without prompting and signals a =user-error= outside a
+project. The capture target is written as =(file my-project-local-note-file)=
+-- a function, not a path -- so it is resolved on every capture, in the buffer
+capture was started from, and can never fall back to a file under =$HOME=.
+Verified both inside a git project (from a subdirectory) and outside one.
 
 * Modal navigation (=my-nav-mode=)
 A transient vi-style layer for the times when reading and moving dominate
