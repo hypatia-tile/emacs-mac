@@ -93,13 +93,16 @@
   ;;      inbox it is never refiled: it is a record to trace back through
   ;;      later. The tag prompt (%^g) completes from the file's #+TAGS
   ;;      line and can be skipped with RET.
+  ;;   i and t, captured from inside a project, also get a PROJECT property
+  ;;      naming it (`my-capture-project-drawer'), so the inbox shows which
+  ;;      repository an item came from when it is refiled.
   ;;   p  a bare note, stamped like "i", appended to the current project's
   ;;      .local.org (see `my-project-local-note-file'). The target is a
   ;;      function, so it is resolved on every capture and errors out
   ;;      outside a project instead of writing somewhere under $HOME.
   (org-capture-templates
-   '(("i" "Inbox" entry (file "") "* %?\n%U\n")
-     ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%u\n%a")
+   '(("i" "Inbox" entry (file "") "* %?\n%(my-capture-project-drawer)%U\n")
+     ("t" "Task" entry (file+headline "" "Tasks") "* TODO %?\n%(my-capture-project-drawer)%u\n%a")
      ("j" "Journal" entry (file+olp+datetree "~/org-notes/journal.org")
       "* %<%H:%M> %^g\n%?")
      ("p" "Project note" entry (file my-project-local-note-file) "* %?\n%U\n"))
@@ -225,6 +228,13 @@
   (if-let* ((project (project-current)))
       (expand-file-name ".local.org" (project-root project))
     (user-error "Not in a project: no .local.org to use")))
+
+(defun my-capture-project-drawer ()
+  "Return a PROJECT property drawer for the buffer capture started from, or \"\"."
+  (with-current-buffer (org-capture-get :original-buffer)
+    (if-let* ((project (project-current)))
+        (concat ":PROPERTIES:\n:PROJECT: " (project-name project) "\n:END:\n")
+      "")))
 
 (defun my-project-open-local-note ()
   "Visit the current project's .local.org; a new file is written on save."

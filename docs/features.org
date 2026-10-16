@@ -223,6 +223,37 @@ project. The capture target is written as =(file my-project-local-note-file)=
 capture was started from, and can never fall back to a file under =$HOME=.
 Verified both inside a git project (from a subdirectory) and outside one.
 
+** Project of origin on inbox captures (=C-c c i=, =C-c c t=)
+Inbox items are refiled later (=C-c C-w=) into =todo.org=, by which time the
+buffer they were captured from is long gone. So when =i= or =t= is captured
+from inside a project, the entry records it:
+
+: * TODO fix the thing
+: :PROPERTIES:
+: :PROJECT: emacs-mac
+: :END:
+
+The templates embed =%(my-capture-project-drawer)= right after the headline
+line (a property drawer is only recognised there). Outside a project the
+function returns "", so no drawer and no blank line appear. The name is
+=project-name= of the project, i.e. the repository directory name. A property
+was chosen over a tag: it needs no rewriting of names (tags cannot contain
+=-=), and once refiled under a project heading in =todo.org= it stays out of
+sight instead of repeating that heading.
+
+Two facts behind the implementation:
+- =%(...)= is evaluated in a temporary =*Capture*= buffer, not the buffer
+  capture started from. =project-current= happens to work there anyway,
+  because the temporary buffer inherits =default-directory=; the function
+  switches to =(org-capture-get :original-buffer)= so it does not rely on that.
+- The expression must sit inside the template string. =org-capture-templates=
+  is a quoted list, so a =(concat ...)= in the template position is stored
+  unevaluated and capture reports "Invalid capture template"; a backquoted
+  =,(...)= would be evaluated once at startup, not per capture.
+
+Verified: =i= and =t= from a git project get =:PROJECT:=, which
+=org-entry-get= reads back; =i= from a non-project directory gets none.
+
 * Modal navigation (=my-nav-mode=)
 A transient vi-style layer for the times when reading and moving dominate
 over typing. =<escape>= enters it, =i= leaves it. Inside, the letter keys are
