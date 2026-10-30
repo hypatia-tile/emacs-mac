@@ -51,8 +51,58 @@
 ;; To set the variable `skk-large-jisyo`, it is better to use `:custom`
 ;; block rather than `setq` in `:config` block.
 ;; See: (info "(use-package)User options")
+;;
+;; `skk-num-compute-henkan-key' is defined in skk-num.el and autoloaded, so
+;; the call works. Several ddskk files call it without `declare-function',
+;; and the native compiler warns that it is not known to be defined.
+;; Upstream has not added the declaration. `elpa/' is replaced on upgrade,
+;; so reapply it to the installed files when it is missing.
+;; `declare-function' is compile-time only, so it does not load skk-num.
+;; `skk-comp-do' let-binds `skk-num-list' because its comment says that not
+;; having required skk-num can clobber a buffer-local value. A .elc from
+;; before the declaration is older than the source; Emacs would keep loading
+;; it and warn on every load, so that stale bytecode is removed.
+(defun my-ddskk-declare-skk-num-compute-henkan-key ()
+  "Declare `skk-num-compute-henkan-key' in installed ddskk files that call it."
+  (when-let* ((lib (locate-library "skk-comp"))
+              (dir (file-name-directory lib)))
+    (dolist (file (directory-files dir t "\\.el\\'"))
+      (when (file-writable-p file)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (let ((coding last-coding-system-used)
+                (calls (save-excursion
+                         (goto-char (point-min))
+                         (re-search-forward
+                          "(skk-num-compute-henkan-key[ \t\n]" nil t)))
+                (defines (save-excursion
+                           (goto-char (point-min))
+                           (re-search-forward
+                            "(defun skk-num-compute-henkan-key\\_>" nil t)))
+                (declared (save-excursion
+                            (goto-char (point-min))
+                            (search-forward
+                             "(declare-function skk-num-compute-henkan-key"
+                             nil t))))
+            (when (and calls (not defines))
+              (unless declared
+                (goto-char (point-min))
+                (when (re-search-forward "^;;; Code:[ \t]*\n" nil t)
+                  (insert "(declare-function skk-num-compute-henkan-key \"skk-num\" (key))\n")
+                  (let ((coding-system-for-write (or coding 'iso-2022-jp)))
+                    (write-region (point-min) (point-max) file nil 'silent))
+                  (setq declared t)))
+              (when declared
+                (let ((elc (byte-compile-dest-file file)))
+                  (when (and elc
+                             (file-exists-p elc)
+                             (file-newer-than-file-p file elc))
+                    (delete-file elc)))))))))))
+
 (use-package ddskk
   :ensure t
+  :init
+  (my-ddskk-declare-skk-num-compute-henkan-key)
   :custom
   (skk-large-jisyo "~/.local/share/skk/SKK-JISYO.L" "Path to the standard large dictionary file (SKK-JISYO.L).")
   :bind (("C-x C-j" . skk-mode)
