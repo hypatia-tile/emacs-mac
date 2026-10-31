@@ -320,23 +320,25 @@
 ;;; Languages & LSP
 
 ;; Eglot (built-in): a minimal LSP client. Auto-start the server for C/C++
-;; (clangd), Rust (rust-analyzer), TypeScript/TSX (typescript-language-server;
-;; eglot's built-in server table already maps both ts modes to it, so no
-;; `eglot-server-programs' entry is needed), and LaTeX (texlab; AUCTeX's
-;; LaTeX-mode is recognized as a tex-mode derivative by that same table).
-;; Servers are found via PATH
-;; (exec-path-from-shell) or, inside a project, via the flake toolchain that
-;; envrc applies; clangd reads compile_commands.json. Standard Emacs facilities
-;; do the rest: eldoc (hover), flymake (diagnostics, see below), xref (M-. ;
-;; go-back on C-c ,), completion-at-point (shown by corfu). Rename:
-;; M-x eglot-rename. Format the buffer with C-c f, which drives the server's
-;; formatter (e.g. rust-analyzer -> rustfmt) unless apheleia is running in the
-;; buffer -- see `my-format-buffer' below; M-x eglot-format handles a region.
-;; The key lives in eglot-mode-map, so it is active only in LSP-managed
-;; buffers.
+;; (clangd), Rust (rust-analyzer), Go (gopls; eglot's built-in server table
+;; already maps go-ts-mode, go-mod-ts-mode and go-work-ts-mode to it, so no
+;; `eglot-server-programs' entry is needed), TypeScript/TSX
+;; (typescript-language-server; that same table maps both ts modes to it), and
+;; LaTeX (texlab; AUCTeX's LaTeX-mode is recognized as a tex-mode derivative by
+;; that same table). Servers are found via PATH (exec-path-from-shell) or,
+;; inside a project, via the flake toolchain that envrc applies; clangd reads
+;; compile_commands.json. Standard Emacs facilities do the rest: eldoc (hover),
+;; flymake (diagnostics, see below), xref (M-. ; go-back on C-c ,),
+;; completion-at-point (shown by corfu). Rename: M-x eglot-rename. Format the
+;; buffer with C-c f, which drives the server's formatter (e.g. rust-analyzer
+;; -> rustfmt, gopls -> gofmt) unless apheleia is running in the buffer -- see
+;; `my-format-buffer' below; M-x eglot-format handles a region. The key lives
+;; in eglot-mode-map, so it is active only in LSP-managed buffers.
 (use-package eglot
   :ensure nil
-  :hook ((c-mode c++-mode rust-ts-mode typescript-ts-mode tsx-ts-mode LaTeX-mode)
+  :hook ((c-mode c++-mode rust-ts-mode
+          go-ts-mode go-mod-ts-mode go-work-ts-mode
+          typescript-ts-mode tsx-ts-mode LaTeX-mode)
          . eglot-ensure)
   :bind (:map eglot-mode-map
               ("C-c f" . my-format-buffer))
@@ -363,6 +365,27 @@
   (when (and (memq window-system '(mac ns x))
              (not (treesit-language-available-p 'rust)))
     (treesit-install-language-grammar 'rust)))
+
+;; Go: use the built-in tree-sitter modes. All three live in go-ts-mode.el,
+;; and loading it registers the associations itself: `.go' -> `go-ts-mode',
+;; `go.mod' -> `go-mod-ts-mode', `go.work' -> `go-work-ts-mode', each through
+;; a `*-maybe' command that stays in `fundamental-mode' until its grammar is
+;; installed. The grammar sources (`go', `gomod', `gowork') are registered
+;; there too, pinned to a commit, so this block only installs one when it is
+;; missing -- and only under a window system, to keep the batch health-check
+;; offline. eglot's built-in table already maps all three modes to gopls.
+;; The server, and the `go' binary the mode's test keys call, come from the
+;; project's flake via envrc. C-c f formats through gopls (gofmt). Organize
+;; imports with M-x eglot-code-action-organize-imports. gopls keeps its
+;; defaults. The mode's own keys stay: C-c C-t t / f / p run tests, C-c C-d
+;; shows a docstring.
+(use-package go-ts-mode
+  :ensure nil
+  :config
+  (dolist (lang '(go gomod gowork))
+    (when (and (memq window-system '(mac ns x))
+               (not (treesit-language-available-p lang)))
+      (treesit-install-language-grammar lang))))
 
 ;; TypeScript: use the built-in tree-sitter modes. `typescript-ts-mode' and
 ;; `tsx-ts-mode' both live in typescript-ts-mode.el, but they are siblings (both
@@ -419,9 +442,10 @@
 ;; as a diff, so point, the mark and the scroll position survive the save.
 ;;
 ;; Enabled per mode rather than through `apheleia-global-mode': the default
-;; `apheleia-mode-alist' also maps rust-ts-mode -> rustfmt, c-mode ->
-;; clang-format and emacs-lisp-mode -> lisp-indent, and format-on-save for
-;; those was never asked for. The modes listed are the ones a Next.js project
+;; `apheleia-mode-alist' also maps rust-ts-mode -> rustfmt, go-ts-mode ->
+;; gofmt, c-mode -> clang-format and emacs-lisp-mode -> lisp-indent, and
+;; format-on-save for those was never asked for. Go formats through gopls
+;; on C-c f. The modes listed are the ones a Next.js project
 ;; actually opens; the tree-sitter variants (js-ts-mode, json-ts-mode,
 ;; css-ts-mode) are left out because no grammar for them is installed.
 ;; js-json-mode is listed separately because it is not a js-mode derivative --
@@ -441,7 +465,7 @@
 ;; server. In a TypeScript buffer that means tsserver's formatter, which is
 ;; exactly the one Biome has to replace. Dispatch instead: where apheleia is
 ;; on, the key runs the same formatter the save hook runs; elsewhere (Rust,
-;; LaTeX, C) it keeps driving the server. The dispatch has to sit on that one
+;; Go, LaTeX, C) it keeps driving the server. The dispatch has to sit on that one
 ;; binding, because eglot-mode-map is a minor mode map and so takes precedence
 ;; over anything a major mode map could bind.
 (defun my-format-buffer ()

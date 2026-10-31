@@ -5,33 +5,35 @@ companion to the inline comments in =init.el= and the operational notes in
 =../README.org=.
 
 * Installed packages and key bindings
-| Area              | Package(s)                          | Key binding(s)                         |
-|-------------------+-------------------------------------+----------------------------------------|
-| Minibuffer UI     | vertico                             | (automatic)                            |
-| Filtering         | orderless                           | (automatic)                            |
-| Annotations       | marginalia                          | (automatic)                            |
-| Search / navigate | consult                             | =C-x b= buffer, =M-y= yank-pop,        |
-|                   |                                     | =C-s= line, =M-g g= goto-line,         |
-|                   |                                     | =M-s g= grep, =M-s r= ripgrep, =M-g i= imenu |
-| Search (isearch)  | built-in                            | =M-s s= forward, =C-r= backward         |
-| In-buffer complete | corfu + cape                       | auto popup while typing; =TAB=          |
-| Key discovery     | which-key (built-in)                | (automatic popup)                      |
-| Git               | magit                               | =C-x g= status                         |
-| Org               | org (built-in)                      | =C-c c= capture (=i= / =t= / =j= / =p=), |
-|                   |                                     | =C-c a= agenda, =C-c l= store link     |
-| Project switching | project (built-in) + ghq            | =C-x p p= switch, =C-x p f= find-file, |
-|                   |                                     | =C-x p n= project-local note           |
-| Bookmarks         | bookmark (built-in) + consult       | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list |
-| LSP (C / C++ / Rust) | eglot (built-in) + clangd / rust-analyzer | =M-.= def, =M-,= back, =M-?= refs, |
-|                   |                                     | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
-| Formatting        | apheleia + Biome (JS/TS) / LSP      | =C-c f= format now; automatic on save  |
-|                   |                                     | in ts / tsx / js / json / css buffers  |
-| Theme             | tokyo-night                         | -                                      |
-| Transparency      | frame-transparency patch (Emacs 31) | =alpha-background 0.70=                |
-| Shell PATH        | exec-path-from-shell                | -                                      |
-| Per-dir env       | envrc                               | =C-c e= prefix (=C-c e a= = allow)     |
-| Terminal          | vterm                               | =C-c t=                                |
-| Modal navigation  | my-nav-mode (hand-written)          | =<escape>= enter, =i= exit             |
+| Area                      | Package(s)                                        | Key binding(s)                                             |
+|---------------------------+---------------------------------------------------+------------------------------------------------------------|
+| Minibuffer UI             | vertico                                           | (automatic)                                                |
+| Filtering                 | orderless                                         | (automatic)                                                |
+| Annotations               | marginalia                                        | (automatic)                                                |
+| Search / navigate         | consult                                           | =C-x b= buffer, =M-y= yank-pop,                            |
+|                           |                                                   | =C-s= line, =M-g g= goto-line,                             |
+|                           |                                                   | =M-s g= grep, =M-s r= ripgrep, =M-g i= imenu               |
+| Search (isearch)          | built-in                                          | =M-s s= forward, =C-r= backward                            |
+| In-buffer complete        | corfu + cape                                      | auto popup while typing; =TAB=                             |
+| Key discovery             | which-key (built-in)                              | (automatic popup)                                          |
+| Git                       | magit                                             | =C-x g= status                                             |
+| Org                       | org (built-in)                                    | =C-c c= capture (=i= / =t= / =j= / =p=),                   |
+|                           |                                                   | =C-c a= agenda, =C-c l= store link                         |
+| Project switching         | project (built-in) + ghq                          | =C-x p p= switch, =C-x p f= find-file,                     |
+|                           |                                                   | =C-x p n= project-local note                               |
+| Bookmarks                 | bookmark (built-in) + consult                     | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list    |
+| LSP (C / C++ / Rust / Go) | eglot (built-in) + clangd / rust-analyzer / gopls | =M-.= def, =M-,= back, =M-?= refs,                         |
+|                           |                                                   | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
+|                           |                                                   | Go: =C-c C-t t= test at point, =C-c C-t f= file,           |
+|                           |                                                   | =C-c C-t p= package, =C-c C-d= docstring                   |
+| Formatting                | apheleia + Biome (JS/TS) / LSP                    | =C-c f= format now; automatic on save                      |
+|                           |                                                   | in ts / tsx / js / json / css buffers                      |
+| Theme                     | tokyo-night                                       | -                                                          |
+| Transparency              | frame-transparency patch (Emacs 31)               | =alpha-background 0.70=                                    |
+| Shell PATH                | exec-path-from-shell                              | -                                                          |
+| Per-dir env               | envrc                                             | =C-c e= prefix (=C-c e a= = allow)                         |
+| Terminal                  | vterm                                             | =C-c t=                                                    |
+| Modal navigation          | my-nav-mode (hand-written)                        | =<escape>= enter, =i= exit                                 |
 
 Personal bindings stay within standard Emacs keys (no macOS Super/Command
 leader). Where a package is a strict upgrade it replaces the standard key in
@@ -56,8 +58,9 @@ Two independent completion layers, by design:
   including eglot's LSP candidates. It pops up automatically while typing.
 
 =eglot= (built-in) auto-starts a language server (=eglot-ensure=) in =c-mode= /
-=c++-mode= (clangd) and =rust-ts-mode= (rust-analyzer). It wires the standard
-Emacs facilities: eldoc (hover), flymake (diagnostics), xref
+=c++-mode= (clangd), =rust-ts-mode= (rust-analyzer), and the Go modes
+=go-ts-mode=, =go-mod-ts-mode= and =go-work-ts-mode= (gopls). It wires the
+standard Emacs facilities: eldoc (hover), flymake (diagnostics), xref
 (definitions/references), and =completion-at-point= (shown by corfu). clangd
 reads =compile_commands.json=; servers are found via PATH (exec-path-from-shell)
 or the project's flake (envrc).
@@ -67,6 +70,19 @@ with Emacs, so =init.el= registers the grammar source and installs it once if
 missing (only under a window system, so the batch health-check stays offline).
 The compiled grammar lands in =tree-sitter/= (gitignored). If a =.rs= buffer
 is not fontified, run =M-x treesit-install-language-grammar= for =rust=.
+
+Go uses the built-in modes in =go-ts-mode.el=: =go-ts-mode= for =.go=,
+=go-mod-ts-mode= for =go.mod=, =go-work-ts-mode= for =go.work=. Emacs already
+records the =go=, =gomod= and =gowork= grammar sources with pinned commits, so
+=init.el= only installs a grammar when it is missing, and only under a window
+system. The compiled grammars land in the same =tree-sitter/= directory. =gopls=
+comes from the project's flake dev shell (=go= and =gopls=, loaded by envrc),
+and =gopls= keeps its default settings. =C-c f= asks gopls to format (=gofmt=).
+Imports are a separate command, =M-x eglot-code-action-organize-imports=. The
+mode's own keys are left in place: =C-c C-t t= tests the function at point,
+=C-c C-t f= the file, =C-c C-t p= the package, and =C-c C-d= shows a docstring.
+If a Go buffer is not fontified, run =M-x treesit-install-language-grammar= for
+=go=, =gomod= or =gowork=.
 
 Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 =M-g p= (next-error) are not wired to flymake, so they are bound explicitly
@@ -145,9 +161,9 @@ a buffer mid-edit is never mangled.
 =apheleia-mode= is hooked into =typescript-ts-mode=, =tsx-ts-mode=, =js-mode=,
 =js-json-mode= and =css-mode= -- not switched on with =apheleia-global-mode=.
 The global mode would also pick up apheleia's defaults for =rust-ts-mode=
-(rustfmt), =c-mode= (clang-format) and =emacs-lisp-mode= (lisp-indent), and
-format-on-save for those was never asked for. Add a hook when a language
-actually needs one.
+(rustfmt), =go-ts-mode= (gofmt), =c-mode= (clang-format) and =emacs-lisp-mode=
+(lisp-indent), and format-on-save for those was never asked for. Go formats
+through gopls on =C-c f=. Add a hook when a language actually needs one.
 
 =js-json-mode= is named separately from =js-mode= because it is not a
 derivative of it (its only parent is =prog-mode=). =.js= opens in
@@ -160,7 +176,7 @@ one added.
 mode map, so the key cannot simply be rebound per language. It now runs
 =my-format-buffer=, which dispatches: apheleia where =apheleia-mode= is on (so
 the key and the save hook run the same formatter), =eglot-format-buffer=
-everywhere else -- Rust, LaTeX, C. =C-u C-c f= still reaches apheleia's
+everywhere else -- Rust, Go, LaTeX, C. =C-u C-c f= still reaches apheleia's
 formatter prompt.
 
 * Project switching (=C-x p p=, ghq)
