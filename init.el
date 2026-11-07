@@ -240,6 +240,87 @@
   (add-hook 'completion-at-point-functions #'cape-dabbrev)
   (add-hook 'completion-at-point-functions #'cape-file))
 
+;; Copilot: ghost text from `copilot-language-server`, the same program
+;; Neovim starts with `vim.lsp.enable "copilot"`. copilot.el speaks that
+;; server's JSON-RPC itself, not through eglot -- most of the protocol is
+;; not standard LSP, and one server is shared by every buffer. The binary
+;; is the one already on PATH; `copilot-install-server` would download a
+;; second copy and is not used. Sign-in is the server's own, the same
+;; `github-copilot` config directory Neovim already uses (`M-x copilot-login`
+;; only if a buffer reports NotAuthorized).
+;;
+;; Suggestions stay off until asked for. Neovim leaves inline completion
+;; disabled and binds insert-mode `C-e` to `vim.lsp.inline_completion.get`,
+;; which accepts the suggestion showing at point or requests one. `C-e` here
+;; is `move-end-of-line`, so that command is `C-c i`. `C-c M-i` is Neovim's
+;; `<leader>tc`: idle suggestions on or off. While a suggestion is showing,
+;; the overlay map's `M-n` / `M-p` cycle it and `C-<tab>` takes the next
+;; word. `TAB` is removed from that map so corfu's indent-then-complete
+;; keeps the key. `SPC` is not a Copilot binding.
+;;
+;; The mode turns on only where Neovim would attach the server: a prog-mode
+;; or text-mode file inside a Git work tree, whose name does not match
+;; env, conf, local, or private.
+(defconst my-copilot-skipped-file-name-regexp "env\\|conf\\|local\\|private"
+  "File names Neovim's Copilot language server refuses to attach to.")
+
+(defun my-copilot-skip-reason ()
+  "Return why Copilot stays off in this buffer, or nil when it may run."
+  (let ((file (buffer-file-name)))
+    (cond
+     ((or (null file) (not (derived-mode-p 'prog-mode 'text-mode)))
+      "Copilot runs in prog and text files inside a Git work tree")
+     ((string-match-p my-copilot-skipped-file-name-regexp
+                      (file-name-nondirectory file))
+      "Copilot stays off for this file name")
+     ((null (locate-dominating-file file ".git"))
+      "Copilot stays off outside a Git work tree")
+     (t nil))))
+
+(defun my-copilot-turn-on ()
+  "Enable `copilot-mode' where Neovim would attach its Copilot server."
+  (unless (or copilot-mode (my-copilot-skip-reason))
+    (copilot-mode 1)))
+
+(defun my-copilot-get ()
+  "Accept the Copilot suggestion at point, or request one.
+This is Neovim's insert-mode `C-e' (`vim.lsp.inline_completion.get')."
+  (interactive)
+  (when-let* ((reason (my-copilot-skip-reason)))
+    (user-error "%s" reason))
+  (unless copilot-mode
+    (copilot-mode 1))
+  (unless (copilot-accept-completion)
+    (copilot-complete)))
+
+(defun my-copilot-toggle-auto ()
+  "Toggle idle Copilot suggestions, like Neovim's `<leader>tc'.
+Off (the default) means a suggestion appears only after `my-copilot-get'."
+  (interactive)
+  (setq copilot-idle-delay (if copilot-idle-delay nil 0))
+  (message "Copilot idle suggestions %s"
+           (if copilot-idle-delay "on" "off")))
+
+(use-package copilot
+  :ensure t
+  :demand t
+  :hook (after-change-major-mode . my-copilot-turn-on)
+  :bind (("C-c i" . my-copilot-get)
+         ("C-c M-i" . my-copilot-toggle-auto))
+  :custom
+  ;; Ask only. Idle completion would also race corfu's popup.
+  (copilot-idle-delay nil)
+  ;; The default list starts with `evil-insert-state-p`. Evil is not in
+  ;; this config; once idle suggestions are on, the predicate should be
+  ;; the buffer-changed check alone.
+  (copilot-enable-predicates '(copilot--buffer-changed))
+  :config
+  ;; Active only while a suggestion is visible. The package binds both
+  ;; event names to accept. Left in place, Tab accepts the suggestion
+  ;; instead of indenting or popping corfu.
+  (keymap-unset copilot-completion-map "TAB")
+  (keymap-unset copilot-completion-map "<tab>"))
+
 ;; Which-key: after starting a key sequence, pop up the available follow-up
 ;; keys (e.g. press C-x and pause to see every C-x binding). Built into
 ;; Emacs 30, so no installation is needed (:ensure nil, like org).

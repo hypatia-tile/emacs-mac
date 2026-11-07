@@ -15,6 +15,8 @@ companion to the inline comments in =init.el= and the operational notes in
 |                           |                                                   | =M-s g= grep, =M-s r= ripgrep, =M-g i= imenu               |
 | Search (isearch)          | built-in                                          | =M-s s= forward, =C-r= backward                            |
 | In-buffer complete        | corfu + cape                                      | auto popup while typing; =TAB=                             |
+| Copilot ghost text        | copilot + =copilot-language-server=               | =C-c i= accept or request, =C-c M-i= idle on/off,          |
+|                           |                                                   | =M-n= / =M-p= cycle, =C-<tab>= one word                    |
 | Key discovery             | which-key (built-in)                              | (automatic popup)                                          |
 | Git                       | magit                                             | =C-x g= status                                             |
 | Org                       | org (built-in)                                    | =C-c c= capture (=i= / =t= / =j= / =p=),                   |
@@ -51,11 +53,14 @@ list), with =C-x r b= upgraded to =consult-bookmark= (preview + create).
 Bookmarks persist to =~/.emacs.d/bookmarks= (gitignored; personal locations).
 
 * Completion and LSP
-Two independent completion layers, by design:
+Three completion layers, by design:
 - *Minibuffer* -- vertico + orderless + marginalia + consult (for =M-x=,
   find-file, buffer switching, search commands).
 - *In-buffer* -- corfu shows a popup at point for =completion-at-point=,
   including eglot's LSP candidates. It pops up automatically while typing.
+- *Copilot* -- ghost text from the same =copilot-language-server= Neovim's
+  Copilot LSP uses. It is not a =completion-at-point= source, so it does not
+  go through corfu. Details below.
 
 =eglot= (built-in) auto-starts a language server (=eglot-ensure=) in =c-mode= /
 =c++-mode= (clangd), =rust-ts-mode= (rust-analyzer), and the Go modes
@@ -125,6 +130,37 @@ the global =completion-at-point-functions=. These show up in ordinary buffers;
 in eglot (LSP) buffers eglot installs its own buffer-local capf, so LSP
 completion stays primary there (merging buffer words into LSP buffers with
 =cape-capf-super= is deferred).
+
+* Copilot (=C-c i=)
+Neovim enables the Copilot language server with =vim.lsp.enable "copilot"=
+and leaves inline completion off
+(=vim.lsp.inline_completion.enable(false)=). Insert-mode =C-e= calls
+=vim.lsp.inline_completion.get=, which accepts the suggestion at point or
+requests one; =C-f= / =C-b= cycle; =<leader>tc= toggles automatic
+suggestions. The server binary is =copilot-language-server= from
+nix-packages, already on =PATH=.
+
+Emacs uses [[https://github.com/copilot-emacs/copilot.el][copilot.el]] against that same binary. It is not an eglot client:
+most of the Copilot protocol is not standard LSP, and one server process
+is shared by every buffer. =copilot-install-server= is not used, so Emacs
+does not download a second copy. The server reads the GitHub sign-in
+Neovim already stored; =M-x copilot-login= is only needed when a buffer
+reports NotAuthorized. =M-x copilot-diagnose= restarts the server and
+prints its status.
+
+=C-e= in Emacs is =move-end-of-line=, so "accept, or request" is =C-c i=
+(=my-copilot-get=). =C-c M-i= toggles idle suggestions (=<leader>tc=).
+The default is off, matching Neovim, and so the ghost text does not race
+corfu's popup. While a suggestion is showing, =M-n= / =M-p= cycle it and
+=C-<tab>= accepts the next word. =TAB= is removed from the overlay map,
+so it stays indent-then-complete for corfu. =SPC= is not a Copilot
+binding. The overlay bindings exist only while a suggestion is visible.
+
+The mode turns on for a prog-mode or text-mode file inside a Git work
+tree, and stays off when the file name matches =env=, =conf=, =local=, or
+=private= -- the same refusal as Neovim's =root_dir=. Chat and Next Edit
+Suggestions ship in the package and are left off; Neovim's config does
+not bind them either.
 
 * Formatting (=C-c f=, Biome via apheleia)
 The Next.js projects run [[https://biomejs.dev/][Biome]] as their formatter and linter: =@biomejs/biome=
