@@ -503,6 +503,39 @@ Off (the default) means a suggestion appears only after `my-copilot-get'."
                (not (treesit-language-available-p (car src))))
       (treesit-install-language-grammar (car src)))))
 
+;; Markdown: highlighting only. Emacs 31 ships `markdown-ts-mode` and does
+;; not enable it, because the mode is still experimental. It fontifies
+;; headings, emphasis, code, links and lists from the `markdown` and
+;; `markdown-inline` grammars, whose sources (pinned commits) the library
+;; registers itself. Install those once, and only under a window system, so
+;; the batch health-check stays offline and the first visit does not stop
+;; at `treesit-auto-install-grammar' (`ask').
+;;
+;; The mode also edits tables, runs commands inside fenced code, and
+;; fontifies each fence with that language's major mode. None of that is
+;; wanted here, so those three switches stay off: a fence keeps one code
+;; face. `TAB` in the mode map cycles outline visibility; it is removed so
+;; `TAB` stays indent-then-complete, as everywhere else. The mode's other
+;; keys (list continuation on `RET`, heading motion) are left in place.
+;; Long lines wrap, as in Org.
+(use-package markdown-ts-mode
+  :ensure nil
+  :demand t
+  :mode (("\\.md\\'" . markdown-ts-mode)
+         ("\\.markdown\\'" . markdown-ts-mode))
+  :hook (markdown-ts-mode . visual-line-mode)
+  :custom
+  (markdown-ts-fontify-code-blocks-natively nil)
+  (markdown-ts-enable-code-block-context-mode nil)
+  (markdown-ts-enable-table-mode nil)
+  :config
+  (keymap-unset markdown-ts-mode-map "TAB")
+  (keymap-unset markdown-ts-mode-map "<tab>")
+  (dolist (lang '(markdown markdown-inline))
+    (when (and (memq window-system '(mac ns x))
+               (not (treesit-language-available-p lang)))
+      (treesit-install-language-grammar lang))))
+
 ;; Apheleia: run a code formatter on save, asynchronously. The Next.js projects
 ;; use Biome (@biomejs/biome in devDependencies, biome.json at the root) as
 ;; their formatter and linter, so the formatter here has to be Biome and not

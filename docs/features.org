@@ -28,6 +28,7 @@ companion to the inline comments in =init.el= and the operational notes in
 |                           |                                                   | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 |                           |                                                   | Go: =C-c C-t t= test at point, =C-c C-t f= file,           |
 |                           |                                                   | =C-c C-t p= package, =C-c C-d= docstring                   |
+| Markdown                  | markdown-ts-mode (built-in)                       | highlighting; =TAB= stays indent/complete; lines wrap     |
 | Formatting                | apheleia + Biome (JS/TS) / LSP                    | =C-c f= format now; automatic on save                      |
 |                           |                                                   | in ts / tsx / js / json / css buffers                      |
 | Theme                     | tokyo-night                                       | -                                                          |
@@ -161,6 +162,22 @@ tree, and stays off when the file name matches =env=, =conf=, =local=, or
 =private= -- the same refusal as Neovim's =root_dir=. Chat and Next Edit
 Suggestions ship in the package and are left off; Neovim's config does
 not bind them either.
+
+* Markdown
+=.md= and =.markdown= open in the built-in =markdown-ts-mode= (Emacs 31
+does not enable it on its own). It is there for highlighting: headings,
+emphasis, inline code, links and lists. Three of the mode's own extras
+stay off -- per-language fontification inside fences, the in-fence
+command context, and table editing -- so a fence is one code face and
+opening a file does not grow a second editing mode. =TAB= is taken off
+the mode map; it stays indent-then-complete. =RET= still continues a
+list, which is the mode's own binding. Long lines wrap
+(=visual-line-mode=), as in Org.
+
+The =markdown= and =markdown-inline= grammars are installed once, under a
+window system only, from the pinned sources the library already records.
+The batch health-check does not compile them. If a buffer is not
+fontified, run =M-x markdown-ts-mode-install-parsers=.
 
 * Formatting (=C-c f=, Biome via apheleia)
 The Next.js projects run [[https://biomejs.dev/][Biome]] as their formatter and linter: =@biomejs/biome=
