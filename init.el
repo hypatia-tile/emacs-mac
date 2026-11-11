@@ -162,6 +162,9 @@
   (org-startup-folded t)
   (org-hide-emphasis-markers t)
   (org-startup-with-inline-images t)
+  ;; The default `reorganize-frame' deletes every other window. Shackle
+  ;; places the agenda when it can; `other-window' is what runs if it cannot.
+  (org-agenda-window-setup 'other-window)
   :hook
   (org-mode . visual-line-mode))
 
@@ -396,6 +399,51 @@ Off (the default) means a suggestion appears only after `my-copilot-get'."
 (use-package vterm
   :ensure t
   :bind ("C-c t" . vterm))
+
+
+;;; Window placement
+
+;; Shackle decides where a command's buffer appears. A file or buffer asked
+;; for by name is untouched: `C-x C-f', `C-x b', a bookmark, a project file
+;; and `M-.' still use the selected window.
+;;
+;; `:align' splits the frame's root window, so the new window runs the full
+;; height or the full width of the frame. The side is right when the selected
+;; window is at least `split-width-threshold' columns wide (150 here), and
+;; below when it is narrower. Shackle reuses a window that already shows the
+;; same buffer, and `:select' moves point there.
+;;
+;; Help is the exception: a full-width band along the bottom, one third the
+;; height of the frame. A link in a help page still replaces that page.
+;; Emacs erases the one `*Help*' buffer before asking Shackle where to put
+;; it, and Shackle then reuses the window that is already showing it.
+;;
+;; Magit status, diff, revision, stash and process are listed on purpose.
+;; A Magit buffer opened from inside Magit, other than those, still replaces
+;; the Magit window it came from.
+
+(defun my-shackle-align ()
+  "Return `right' or `below' for a Shackle rule.
+Right when the selected window is at least `split-width-threshold'
+columns wide, below otherwise."
+  (if (>= (window-width) split-width-threshold)
+      'right
+    'below))
+
+(use-package shackle
+  :ensure t
+  :custom
+  (shackle-rules
+   '((help-mode :align below :size 0.33 :select t)
+     ((magit-status-mode magit-diff-mode magit-revision-mode
+                         magit-stash-mode magit-process-mode)
+      :align my-shackle-align :select t)
+     ("\\`\\*vterm" :regexp t :align my-shackle-align :select t)
+     ("\\`CAPTURE-" :regexp t :align my-shackle-align :select t)
+     ("\\`\\*Org Agenda\\*" :regexp t :align my-shackle-align :select t)
+     ((grep-mode "\\`\\*grep") :regexp t :align my-shackle-align :select t)))
+  :config
+  (shackle-mode 1))
 
 
 ;;; Languages & LSP

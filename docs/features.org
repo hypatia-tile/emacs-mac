@@ -36,6 +36,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Shell PATH                | exec-path-from-shell                              | -                                                          |
 | Per-dir env               | envrc                                             | =C-c e= prefix (=C-c e a= = allow)                         |
 | Terminal                  | vterm                                             | =C-c t=                                                    |
+| Window placement          | shackle                                           | (automatic)                                                |
 | Modal navigation          | my-nav-mode (hand-written)                        | =<escape>= enter, =i= exit                                 |
 
 Personal bindings stay within standard Emacs keys (no macOS Super/Command
@@ -520,6 +521,31 @@ is not a daemon either, so there is no second frame-creation path to cover.
 
 Blur is deliberately left off. Transparency alone is what matches the terminal,
 and =ns-background-blur= is available if that judgement changes.
+
+* Window placement (=shackle=)
+A file or buffer asked for by name stays in the window you are in:
+=C-x C-f=, =C-x b=, a bookmark, a project file, =M-.=.
+
+Shackle places the buffers a command opens. =:align= splits the frame's root
+window, so the new window runs the full height or the full width of the frame.
+The side is right when the selected window is at least =split-width-threshold=
+columns wide (150 here), and below when it is narrower. A window already
+showing that buffer is reused, and point moves to it.
+
+The rules cover Magit status, diff, revision, stash and process, =C-c t=
+(vterm), Org capture, the agenda, and a =*grep*= buffer. Help is its own
+rule: a full-width band along the bottom, one third the height of the frame
+(=:size 0.33=). A link in a help page replaces that page. Emacs erases the
+one =*Help*= buffer before Shackle chooses a window, and Shackle then reuses
+the window already showing it.
+
+A Magit buffer opened from inside Magit, other than the five above, still
+replaces the Magit window it came from. =M-s g= and =M-s r= do not open a
+results window.
+
+The agenda's default (=reorganize-frame=) would delete the other windows.
+=org-agenda-window-setup= is =other-window=, which is what runs when Shackle
+does not place that buffer.
 
 * Helper scripts
 See =../scripts/=:
