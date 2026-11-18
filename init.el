@@ -165,6 +165,10 @@
   ;; The default `reorganize-frame' deletes every other window. Shackle
   ;; places the agenda when it can; `other-window' is what runs if it cannot.
   (org-agenda-window-setup 'other-window)
+  ;; `<s' at the start of a line, then TAB, inserts a source block.
+  ;; The same loader expands the other structure templates (`<q', `<e', ...).
+  :config
+  (require 'org-tempo)
   :hook
   (org-mode . visual-line-mode))
 
