@@ -38,6 +38,11 @@ tramp
 /eshell/history
 /eshell/lastdir
 
+# agent-shell input history. shell-maker names the shell "agent" and writes
+# the prompt ring to agent/history under user-emacs-directory. The prompts
+# are personal, so the whole directory stays out of git.
+/agent/
+
 # elpa packages
 /elpa/
 

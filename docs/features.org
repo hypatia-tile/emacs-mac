@@ -36,6 +36,7 @@ companion to the inline comments in =init.el= and the operational notes in
 | Shell PATH                | exec-path-from-shell                              | -                                                          |
 | Per-dir env               | envrc                                             | =C-c e= prefix (=C-c e a= = allow)                         |
 | Terminal                  | vterm                                             | =C-c t=                                                    |
+| Coding agents (ACP)       | agent-shell + acp                                 | =C-c g= pick or reuse, =C-u C-c g= new session             |
 | Window placement          | shackle                                           | (automatic)                                                |
 | Modal navigation          | my-nav-mode (hand-written)                        | =<escape>= enter, =i= exit                                 |
 
@@ -521,6 +522,52 @@ is not a daemon either, so there is no second frame-creation path to cover.
 
 Blur is deliberately left off. Transparency alone is what matches the terminal,
 and =ns-background-blur= is available if that judgement changes.
+
+* Coding agents (=C-c g=, ACP)
+=agent-shell= is a comint buffer that speaks the Agent Client Protocol, so
+one Emacs command talks to whichever coding agent implements it. =C-c g=
+runs =agent-shell=: it offers the known agents and reuses a live shell for
+the one you pick. =C-u C-c g= starts another session. =C-u C-u C-c g=
+switches to an existing shell.
+
+The Emacs packages (=agent-shell=, =acp=, =shell-maker=, all from MELPA) do
+not contain the agents. Each entry launches its own program:
+
+| Agent  | Program agent-shell runs      |
+|--------+-------------------------------|
+| Claude | =claude-agent-acp=            |
+| Codex  | =codex-acp=                   |
+| Cursor | =agent acp=                   |
+| Copilot| =copilot --acp=               |
+
+The =claude=, =codex=, and =cursor= programs already on this machine are
+different binaries, and agent-shell will not start them. Picking an agent
+whose program is missing stops with the program name and a link, and leaves
+no shell buffer.
+
+Checked 2026-11-17 on Emacs 31.1: =agent-shell= 0.96.1 loads, and =C-c g= is
+=agent-shell=. =claude-agent-acp= 0.100.0 and =codex-acp= 2.1.1 are on PATH, so
+Claude and Codex can start. =agent= and =copilot= are still absent, so Cursor
+and Copilot still stop at shell creation. An Emacs that was already running
+when those programs were installed keeps the PATH it imported at startup;
+restart it, or run =M-x exec-path-from-shell-initialize=, before =C-c g=.
+
+A slash command does its special job when =claude-agent-acp= has listed it.
+The shell prints that list as "Available /commands", and typing =/= at the
+start of the prompt completes the same names. =/rename= and =/context= were
+on the list in the 2026-11-17 session and ran.
+
+=claude-agent-acp= 0.100.0 always drops these, even when Claude Code has
+them: =clear=, =cost=, =keybindings-help=, =login=, =logout=,
+=output-style:new=, =release-notes=, =todos=. It also drops every command
+Claude Code marks as part of its own terminal. In that session those
+included =/btw= (a side question kept out of the transcript) and =/exit=
+(quit the terminal program). Leaving the shell is an Emacs command: =C-c g=
+hides the window and keeps the session, and =C-x k= kills the buffer and
+shuts the agent down. =C-c C-c= cancels the turn that is running.
+
+The prompts you type are saved in =agent/history= under this directory.
+That file is gitignored.
 
 * Window placement (=shackle=)
 A file or buffer asked for by name stays in the window you are in:

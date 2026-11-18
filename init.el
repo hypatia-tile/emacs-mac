@@ -400,6 +400,19 @@ Off (the default) means a suggestion appears only after `my-copilot-get'."
   :ensure t
   :bind ("C-c t" . vterm))
 
+;; agent-shell: a comint buffer that talks to coding agents over ACP, the
+;; Agent Client Protocol. `C-c g' (`M-x agent-shell') picks an agent and
+;; reuses a live shell; `C-u C-c g' starts another session, and
+;; `C-u C-u C-c g' switches to an existing one. The package pulls in `acp'
+;; and `shell-maker'. It does not install the agent programs themselves:
+;; Claude is `claude-agent-acp', Codex is `codex-acp', Cursor is
+;; `agent acp'. The `claude', `codex', and `cursor' binaries already on
+;; PATH are different programs, and a missing one stops at shell creation
+;; with the executable name and an install link.
+(use-package agent-shell
+  :ensure t
+  :bind ("C-c g" . agent-shell))
+
 
 ;;; Window placement
 
