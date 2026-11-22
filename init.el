@@ -468,7 +468,8 @@ columns wide, below otherwise."
 ;; Eglot (built-in): a minimal LSP client. Auto-start the server for C/C++
 ;; (clangd), Rust (rust-analyzer), Go (gopls; eglot's built-in server table
 ;; already maps go-ts-mode, go-mod-ts-mode and go-work-ts-mode to it, so no
-;; `eglot-server-programs' entry is needed), TypeScript/TSX
+;; `eglot-server-programs' entry is needed), OCaml (ocamllsp; that same table
+;; maps tuareg-mode, and so tuareg-interface-mode, to it), TypeScript/TSX
 ;; (typescript-language-server; that same table maps both ts modes to it), and
 ;; LaTeX (texlab; AUCTeX's LaTeX-mode is recognized as a tex-mode derivative by
 ;; that same table). Servers are found via PATH (exec-path-from-shell) or,
@@ -477,13 +478,15 @@ columns wide, below otherwise."
 ;; flymake (diagnostics, see below), xref (M-. ; go-back on C-c ,),
 ;; completion-at-point (shown by corfu). Rename: M-x eglot-rename. Format the
 ;; buffer with C-c f, which drives the server's formatter (e.g. rust-analyzer
-;; -> rustfmt, gopls -> gofmt) unless apheleia is running in the buffer -- see
-;; `my-format-buffer' below; M-x eglot-format handles a region. The key lives
-;; in eglot-mode-map, so it is active only in LSP-managed buffers.
+;; -> rustfmt, gopls -> gofmt, ocamllsp -> ocamlformat) unless apheleia is
+;; running in the buffer -- see `my-format-buffer' below; M-x eglot-format
+;; handles a region. The key lives in eglot-mode-map, so it is active only in
+;; LSP-managed buffers.
 (use-package eglot
   :ensure nil
   :hook ((c-mode c++-mode rust-ts-mode
           go-ts-mode go-mod-ts-mode go-work-ts-mode
+          tuareg-mode
           typescript-ts-mode tsx-ts-mode LaTeX-mode)
          . eglot-ensure)
   :bind (:map eglot-mode-map
@@ -532,6 +535,41 @@ columns wide, below otherwise."
     (when (and (memq window-system '(mac ns x))
                (not (treesit-language-available-p lang)))
       (treesit-install-language-grammar lang))))
+
+;; OCaml: tuareg, the mode maintained with the language. Its autoloads
+;; register `.ml' / `.mlp' / `.eliom' -> tuareg-mode, `.mli' / `.eliomi'
+;; -> tuareg-interface-mode (a tuareg-mode derivative, so the eglot hook
+;; above covers both), `.mly' -> tuareg-menhir-mode, and opam files ->
+;; tuareg-opam-mode. eglot's built-in table already maps tuareg-mode to
+;; ocamllsp. The server, and the `ocaml' binary the toplevel (C-c C-s)
+;; calls, come from the project's flake via envrc. C-c f formats through
+;; ocamllsp, which uses ocamlformat when the project has it. The mode's
+;; own keys stay: C-c C-a switches between the implementation and the
+;; interface. `.mll' has no mode here.
+;;
+;; tuareg-opam-mode writes through flymake aliases while the mode turns
+;; on, even though linting stays off (`tuareg-opam-flymake' is nil). It
+;; binds those aliases to names that, on Emacs 31, exist only once
+;; `flymake-proc' is loaded, so an opam file otherwise errors with a
+;; void variable. Retarget them after the library loads and before the
+;; mode body runs.
+(use-package tuareg
+  :ensure t
+  :defer t
+  :init
+  (with-eval-after-load 'tuareg-opam
+    (require 'flymake-proc)
+    (defvaralias 'tuareg-opam--flymake-proc-allowed-file-name-masks
+      'flymake-proc-allowed-file-name-masks)
+    (defvaralias 'tuareg-opam--flymake-proc-err-line-patterns
+      'flymake-proc-err-line-patterns)))
+
+;; dune files (`dune', `dune-project', `dune-workspace', `dune.inc'): the
+;; major mode shipped with the dune build system. Syntax and indentation
+;; only. ocamllsp is not started in these buffers.
+(use-package dune
+  :ensure t
+  :defer t)
 
 ;; TypeScript: use the built-in tree-sitter modes. `typescript-ts-mode' and
 ;; `tsx-ts-mode' both live in typescript-ts-mode.el, but they are siblings (both
@@ -644,7 +682,7 @@ columns wide, below otherwise."
 ;; server. In a TypeScript buffer that means tsserver's formatter, which is
 ;; exactly the one Biome has to replace. Dispatch instead: where apheleia is
 ;; on, the key runs the same formatter the save hook runs; elsewhere (Rust,
-;; Go, LaTeX, C) it keeps driving the server. The dispatch has to sit on that one
+;; Go, OCaml, LaTeX, C) it keeps driving the server. The dispatch has to sit on that one
 ;; binding, because eglot-mode-map is a minor mode map and so takes precedence
 ;; over anything a major mode map could bind.
 (defun my-format-buffer ()

@@ -24,10 +24,11 @@ companion to the inline comments in =init.el= and the operational notes in
 | Project switching         | project (built-in) + ghq                          | =C-x p p= switch, =C-x p f= find-file,                     |
 |                           |                                                   | =C-x p n= project-local note                               |
 | Bookmarks                 | bookmark (built-in) + consult                     | =C-x r m= set, =C-x r b= jump (consult), =C-x r l= list    |
-| LSP (C / C++ / Rust / Go) | eglot (built-in) + clangd / rust-analyzer / gopls | =M-.= def, =M-,= back, =M-?= refs,                         |
-|                           |                                                   | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
+| LSP (C / C++ / Rust / Go / OCaml) | eglot (built-in) + clangd / rust-analyzer / gopls / ocamllsp | =M-.= def, =M-,= back, =M-?= refs,                    |
+|                           | tuareg + dune-mode                                | =M-x eglot-rename=, diag =C-c ! n= / =C-c ! p= / =C-c ! l= |
 |                           |                                                   | Go: =C-c C-t t= test at point, =C-c C-t f= file,           |
 |                           |                                                   | =C-c C-t p= package, =C-c C-d= docstring                   |
+|                           |                                                   | OCaml: =C-c C-a= switch .ml/.mli, =C-c C-s= toplevel       |
 | Markdown                  | markdown-ts-mode (built-in)                       | highlighting; =TAB= stays indent/complete; lines wrap     |
 | Formatting                | apheleia + Biome (JS/TS) / LSP                    | =C-c f= format now; automatic on save                      |
 |                           |                                                   | in ts / tsx / js / json / css buffers                      |
@@ -66,9 +67,10 @@ Three completion layers, by design:
   go through corfu. Details below.
 
 =eglot= (built-in) auto-starts a language server (=eglot-ensure=) in =c-mode= /
-=c++-mode= (clangd), =rust-ts-mode= (rust-analyzer), and the Go modes
-=go-ts-mode=, =go-mod-ts-mode= and =go-work-ts-mode= (gopls). It wires the
-standard Emacs facilities: eldoc (hover), flymake (diagnostics), xref
+=c++-mode= (clangd), =rust-ts-mode= (rust-analyzer), the Go modes
+=go-ts-mode=, =go-mod-ts-mode= and =go-work-ts-mode= (gopls), and
+=tuareg-mode= (ocamllsp). It wires the standard Emacs facilities: eldoc
+(hover), flymake (diagnostics), xref
 (definitions/references), and =completion-at-point= (shown by corfu). clangd
 reads =compile_commands.json=; servers are found via PATH (exec-path-from-shell)
 or the project's flake (envrc).
@@ -91,6 +93,22 @@ mode's own keys are left in place: =C-c C-t t= tests the function at point,
 =C-c C-t f= the file, =C-c C-t p= the package, and =C-c C-d= shows a docstring.
 If a Go buffer is not fontified, run =M-x treesit-install-language-grammar= for
 =go=, =gomod= or =gowork=.
+
+OCaml uses [[https://github.com/ocaml/tuareg][tuareg]] for =.ml= / =.mlp= / =.eliom= (=tuareg-mode=) and =.mli= /
+=.eliomi= (=tuareg-interface-mode=, which derives from =tuareg-mode=, so the
+same eglot hook covers it). =.mly= opens in =tuareg-menhir-mode= and opam
+files in =tuareg-opam-mode=; neither starts a language server. On Emacs 31
+the opam mode's flymake aliases point at names that live in =flymake-proc=,
+and writing through them while the mode turns on signals a void variable;
+=init.el= retargets the aliases, and linting stays off, so opening an opam
+file does not run =opam=. =dune=,
+=dune-project=, =dune-workspace= and =dune.inc= open in =dune-mode=, the mode
+shipped with dune: syntax and indentation, no LSP. =.mll= has no mode.
+=ocamllsp= comes from the project's flake dev shell, loaded by envrc, the
+same way =gopls= does. =C-c f= asks ocamllsp to format, which uses
+ocamlformat when the project has it. =C-c C-a= switches between the
+implementation and the interface. =C-c C-s= starts the OCaml toplevel; that
+binary comes from the same dev shell.
 
 Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 =M-g p= (next-error) are not wired to flymake, so they are bound explicitly
@@ -218,7 +236,8 @@ a buffer mid-edit is never mangled.
 The global mode would also pick up apheleia's defaults for =rust-ts-mode=
 (rustfmt), =go-ts-mode= (gofmt), =c-mode= (clang-format) and =emacs-lisp-mode=
 (lisp-indent), and format-on-save for those was never asked for. Go formats
-through gopls on =C-c f=. Add a hook when a language actually needs one.
+through gopls on =C-c f=, and OCaml through ocamllsp. Add a hook when a
+language actually needs one.
 
 =js-json-mode= is named separately from =js-mode= because it is not a
 derivative of it (its only parent is =prog-mode=). =.js= opens in
@@ -231,7 +250,7 @@ one added.
 mode map, so the key cannot simply be rebound per language. It now runs
 =my-format-buffer=, which dispatches: apheleia where =apheleia-mode= is on (so
 the key and the save hook run the same formatter), =eglot-format-buffer=
-everywhere else -- Rust, Go, LaTeX, C. =C-u C-c f= still reaches apheleia's
+everywhere else -- Rust, Go, OCaml, LaTeX, C. =C-u C-c f= still reaches apheleia's
 formatter prompt.
 
 * Project switching (=C-x p p=, ghq)
