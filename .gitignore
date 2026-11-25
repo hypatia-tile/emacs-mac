@@ -46,6 +46,9 @@ tramp
 # elpa packages
 /elpa/
 
+# lsp-mode session (machine-specific workspace paths)
+/.lsp-session-v1
+
 # reftex files
 *.rel
 

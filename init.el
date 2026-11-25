@@ -571,6 +571,30 @@ columns wide, below otherwise."
   :ensure t
   :defer t)
 
+;; Lean 4: lean4-mode, maintained with the language community. It is not
+;; in the package archives, so `:vc' clones it. `:rev :last-release'
+;; checks out the commit that last changed the library's Version header,
+;; which is 1.1.2. `.lean' opens in `lean4-mode'. The mode registers an
+;; lsp-mode client: `lake serve' when lake is at least 3.1.0, otherwise
+;; `lean --server'. The executable is searched for on `exec-path', and
+;; the project is the outermost directory that contains `lean-toolchain'.
+;; Both binaries come from the project's flake via envrc.
+;;
+;; The mode's default hook calls `lsp' at once. envrc applies the dev
+;; shell from `after-change-major-mode-hook', which runs after the
+;; major-mode hook, so `lake' would be looked up before the dev shell is
+;; on `exec-path'. `lsp-deferred' starts the server from an idle timer,
+;; after that hook, and only once the buffer is visible. The mode's own keys
+;; stay: C-c C-i toggles the goals buffer, C-c C-p C-l builds with lake,
+;; TAB indents, and S-SPC completes. The Lean input method is turned on
+;; in these buffers.
+(use-package lean4-mode
+  :commands lean4-mode
+  :vc (:url "https://github.com/leanprover-community/lean4-mode.git"
+       :rev :last-release)
+  :init
+  (setq lean4-mode-hook '(lsp-deferred)))
+
 ;; TypeScript: use the built-in tree-sitter modes. `typescript-ts-mode' and
 ;; `tsx-ts-mode' both live in typescript-ts-mode.el, but they are siblings (both
 ;; derive from `typescript-ts-base-mode'), so each needs its own `:mode' entry

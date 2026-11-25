@@ -29,6 +29,8 @@ companion to the inline comments in =init.el= and the operational notes in
 |                           |                                                   | Go: =C-c C-t t= test at point, =C-c C-t f= file,           |
 |                           |                                                   | =C-c C-t p= package, =C-c C-d= docstring                   |
 |                           |                                                   | OCaml: =C-c C-a= switch .ml/.mli, =C-c C-s= toplevel       |
+| Lean                      | lean4-mode + lsp-mode                             | =C-c C-i= goals, =C-c C-p C-l= lake build,                 |
+|                           |                                                   | =S-SPC= complete, =TAB= indent                             |
 | Markdown                  | markdown-ts-mode (built-in)                       | highlighting; =TAB= stays indent/complete; lines wrap     |
 | Formatting                | apheleia + Biome (JS/TS) / LSP                    | =C-c f= format now; automatic on save                      |
 |                           |                                                   | in ts / tsx / js / json / css buffers                      |
@@ -109,6 +111,23 @@ same way =gopls= does. =C-c f= asks ocamllsp to format, which uses
 ocamlformat when the project has it. =C-c C-a= switches between the
 implementation and the interface. =C-c C-s= starts the OCaml toplevel; that
 binary comes from the same dev shell.
+
+Lean uses [[https://github.com/leanprover-community/lean4-mode][lean4-mode]]. It is not in the package archives, so =init.el=
+clones it with =use-package='s =:vc= keyword, at =:last-release= (the
+commit that last changed the library's Version header, 1.1.2). =.lean=
+opens in =lean4-mode=. The language server client is lsp-mode, which the
+mode registers itself: =lake serve= when lake is at least 3.1.0, and
+=lean --server= otherwise. The executable is searched for on =exec-path=,
+and the project is the outermost directory containing =lean-toolchain=.
+=lean= and =lake= come from the project's flake dev shell, loaded by
+envrc. The mode's own hook would call =lsp= immediately, before envrc has
+put that dev shell on =exec-path=, so the hook is =lsp-deferred=: the
+server starts from an idle timer, after envrc, once the buffer is
+visible. Diagnostics go to flymake (flycheck is not installed), so
+=C-c ! n= / =C-c ! p= / =C-c ! l= apply. =C-c C-i= toggles the goals
+buffer. =C-c C-p C-l= builds with lake. =TAB= indents and =S-SPC=
+completes, which are the mode's own keys. The Lean input method is on
+in these buffers.
 
 Diagnostics navigation: modern flymake ships no default keys and =M-g n= /
 =M-g p= (next-error) are not wired to flymake, so they are bound explicitly
